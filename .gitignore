@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+
+# Sesion de Garmin (da acceso a la cuenta) -- nunca se sube.
+.garmin_tokens/
+
+# Datos personales descargados de Garmin.
+data/
+
+# Logs locales.
+logs/
+
+# Archivos generados (se regeneran con los scripts).
+dashboard.html
+_preview_share.html
