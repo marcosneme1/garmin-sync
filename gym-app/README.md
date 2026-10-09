@@ -29,7 +29,17 @@ entrenamiento con Gemini.
   alternativas sugeridas se guardan; repetir la misma consulta no vuelve a
   llamar a Gemini.
 
-Todo (perfil, planes, galería, API key) se guarda solo en el teléfono.
+- **Registro de entrenamientos**: desde un día del plan, "▶ Empezar
+  entrenamiento" abre la sesión: peso y repeticiones por serie (precargados
+  con lo de la última vez), temporizador de descanso que arranca al marcar
+  cada serie, agregar/quitar series y cambiar un ejercicio en el momento
+  (opcionalmente también en el plan). La sesión en curso sobrevive a cerrar
+  la app.
+- **Progreso**: entrenamientos de la semana contra los días del plan,
+  historial de sesiones (duración, series, volumen) y evolución por
+  ejercicio (peso máximo y 1RM estimado con Epley, gráfico y tabla).
+
+Todo (perfil, planes, historial, galería, API key) se guarda solo en el teléfono.
 
 ## API key de Gemini
 

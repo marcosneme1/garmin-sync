@@ -7,6 +7,7 @@ import SwapModal from '../components/SwapModal.jsx';
 import { getExercise, resolveExercise } from '../lib/exercises.js';
 import { generatePlan } from '../lib/gemini.js';
 import { DAYS_OPTIONS, GOALS, MINUTES_OPTIONS } from './ProfileForm.jsx';
+import { lastPerformance } from '../lib/workouts.js';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -118,8 +119,9 @@ function GenerateForm({ profile, settings, exercises, onCreated, onCancel }) {
   );
 }
 
-function ExerciseCard({ item, onView, onSwap, onUpdate, onRemove }) {
+function ExerciseCard({ item, history, onView, onSwap, onUpdate, onRemove }) {
   const ex = item.exerciseId ? getExercise(item.exerciseId) : null;
+  const last = lastPerformance(history, item);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item);
 
@@ -138,6 +140,9 @@ function ExerciseCard({ item, onView, onSwap, onUpdate, onRemove }) {
             {item.series} × {item.repeticiones} · descanso {item.descansoSeg}s
           </span>
           {item.notas && <span className="small muted">{item.notas}</span>}
+          {last && (
+            <span className="small muted">Última vez: {last.sets.map((s) => `${s.weight || 0}×${s.reps}`).join(', ')}</span>
+          )}
         </div>
       </button>
       {editing ? (
@@ -164,7 +169,9 @@ function ExerciseCard({ item, onView, onSwap, onUpdate, onRemove }) {
   );
 }
 
-export default function PlanScreen({ profile, settings, exercises, plans, activePlanId, onSavePlans, onSetActive }) {
+export default function PlanScreen({
+  profile, settings, exercises, plans, activePlanId, onSavePlans, onSetActive, history, onStartWorkout,
+}) {
   const plan = plans.find((p) => p.id === activePlanId) ?? plans[0] ?? null;
   const [creating, setCreating] = useState(!plan);
   const [dayIdx, setDayIdx] = useState(0);
@@ -253,12 +260,16 @@ export default function PlanScreen({ profile, settings, exercises, plans, active
           {day.enfoque}
           {day.duracionMin ? ` · ~${day.duracionMin} min` : ''}
         </p>
+        <button className="btn btn-block" onClick={() => onStartWorkout(plan, day)} disabled={!day.ejercicios.length}>
+          ▶ Empezar entrenamiento
+        </button>
         {day.calentamiento && <p className="small"><strong>Calentamiento:</strong> {day.calentamiento}</p>}
         <ul className="plan-list">
           {day.ejercicios.map((it) => (
             <ExerciseCard
               key={it.id}
               item={it}
+              history={history}
               onView={(item, ex) => setViewing({ item, ex })}
               onSwap={(item, ex) => setSwapping({ item, ex })}
               onUpdate={(next) => updateDay((list) => list.map((x) => (x.id === it.id ? next : x)))}

@@ -8,6 +8,7 @@
   --accent: #ff7a1a;
   --accent-text: #1a0d00;
   --danger: #ff5a5f;
+  --chart-line: #e8650f;
   --radius: 12px;
   color-scheme: dark;
 }
@@ -194,3 +195,61 @@ textarea.input { resize: vertical; }
 .gallery-item img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: #fff; border-radius: 8px; }
 .gallery-item strong { font-size: 0.9rem; overflow-wrap: anywhere; }
 .gallery-full { width: 100%; background: #fff; border-radius: 10px; }
+
+/* ---- Entrenamiento ---- */
+.workout-banner {
+  display: block; width: 100%; margin-bottom: 12px; padding: 12px; text-align: left;
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface)); border: 1px solid var(--accent);
+  border-radius: var(--radius); color: var(--text); font: inherit;
+}
+.workout { padding-bottom: 72px; }
+.workout-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.wo-ex-head { display: flex; align-items: center; gap: 8px; }
+.wo-ex-done { border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); }
+.sets-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.sets-table th { font-size: 0.75rem; color: var(--muted); font-weight: 600; text-align: left; padding: 4px; }
+.sets-table td { padding: 4px; }
+.sets-table td:first-child { width: 44px; color: var(--muted); text-align: center; }
+.sets-table td:last-child { width: 52px; }
+.sets-table .input { padding: 10px 8px; text-align: center; }
+.sets-table tr.set-done .input { border-color: var(--accent); }
+.check-btn {
+  width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--muted); font-size: 1.2rem; font-weight: 700;
+}
+.check-btn.on { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+
+.rest-bar {
+  position: fixed; left: 0; right: 0; bottom: calc(58px + env(safe-area-inset-bottom)); z-index: 5;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  padding: 10px 16px; background: var(--surface-2); border-top: 1px solid var(--border); overflow: hidden;
+}
+.rest-progress {
+  position: absolute; left: 0; top: 0; height: 3px; background: var(--accent); transition: width 0.25s linear;
+}
+.rest-time { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 1.1rem; }
+.rest-done { background: color-mix(in srgb, var(--accent) 30%, var(--surface-2)); }
+
+/* ---- Progreso ---- */
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.stat { display: flex; flex-direction: column; margin-bottom: 12px; }
+.stat strong { font-size: 1.8rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.chart { margin: 8px 0 0; }
+.chart-tabs { margin-top: 10px; }
+.chart-readout { display: flex; flex-direction: column; min-height: 44px; }
+.chart-readout strong { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.chart svg { width: 100%; height: auto; display: block; touch-action: pan-y; }
+.chart-grid { stroke: var(--border); stroke-width: 1; }
+.chart-axis { fill: var(--muted); font-size: 11px; }
+.chart-crosshair { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart-line { fill: none; stroke: var(--chart-line); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart-dot { fill: var(--chart-line); stroke: var(--surface); stroke-width: 2; }
+.hist-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.875rem; }
+.hist-table th { text-align: left; color: var(--muted); font-weight: 600; font-size: 0.75rem; padding: 6px 4px; border-bottom: 1px solid var(--border); }
+.hist-table td { padding: 6px 4px; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+.hist-list { list-style: none; padding: 0; margin: 0; }
+.hist-list button {
+  width: 100%; display: flex; flex-direction: column; text-align: left; gap: 2px; padding: 10px 0;
+  background: none; border: 0; border-bottom: 1px solid var(--border); color: var(--text); font: inherit;
+}
+.hist-ex { display: flex; flex-direction: column; padding: 8px 0; border-bottom: 1px solid var(--border); }

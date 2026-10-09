@@ -8,12 +8,17 @@ import SearchPanel from './components/SearchPanel.jsx';
 import GalleryScreen from './screens/GalleryScreen.jsx';
 import { clearGallery, loadGallery } from './lib/gallery.js';
 import { clearAiCache } from './lib/aiCache.js';
+import WorkoutScreen from './screens/WorkoutScreen.jsx';
+import ProgressScreen from './screens/ProgressScreen.jsx';
+import {
+  finishWorkout, getActiveWorkout, getHistory, setActiveWorkout as persistActive, setHistory as persistHistory, startWorkout,
+} from './lib/workouts.js';
 
 const TABS = [
   ['plan', '📋', 'Plan'],
+  ['progress', '📈', 'Progreso'],
   ['search', '🔍', 'Buscar'],
   ['gallery', '🎞️', 'Galería'],
-  ['profile', '👤', 'Perfil'],
   ['settings', '⚙️', 'Ajustes'],
 ];
 
@@ -26,6 +31,8 @@ export default function App() {
   const [settings, setSettings] = useState(storage.getSettings);
   const [tab, setTab] = useState('plan');
   const [onboardingKey, setOnboardingKey] = useState(settings);
+  const [history, setHistory] = useState(getHistory);
+  const [workout, setWorkout] = useState(getActiveWorkout);
 
   useEffect(() => {
     loadExercises().then(setExercises).catch((e) => setLoadError(e.message));
@@ -36,6 +43,32 @@ export default function App() {
   const savePlans = (ps) => { storage.setPlans(ps); setPlans(ps); };
   const saveActive = (id) => { storage.setActivePlanId(id); setActivePlanId(id); };
   const saveSettings = (s) => { storage.setSettings(s); setSettings(s); };
+  const saveWorkout = (w) => { persistActive(w); setWorkout(w); };
+  const saveHistory = (h) => { persistHistory(h); setHistory(h); };
+
+  const beginWorkout = (plan, day) => {
+    if (workout && !window.confirm(`Hay un entrenamiento en curso (${workout.dayName}). ¿Descartarlo y empezar otro?`)) {
+      setTab('workout');
+      return;
+    }
+    saveWorkout(startWorkout(plan, day, history));
+    setTab('workout');
+  };
+
+  const swapInPlan = (planItemId, ex, nombre) =>
+    savePlans(
+      plans.map((p) => ({
+        ...p,
+        dias: p.dias.map((d) => ({
+          ...d,
+          ejercicios: d.ejercicios.map((it) =>
+            it.id === planItemId ? { ...it, exerciseId: ex.id, nombre, notas: '' } : it,
+          ),
+        })),
+      })),
+    );
+
+  const activePlan = plans.find((p) => p.id === activePlanId) ?? plans[0];
 
   if (loadError) return <div className="center error">{loadError}</div>;
   if (!exercises) return <div className="center muted">Cargando…</div>;
@@ -69,6 +102,11 @@ export default function App() {
   return (
     <div className="app-shell">
       <main className="app">
+        {workout && tab !== 'workout' && (
+          <button className="workout-banner" onClick={() => setTab('workout')}>
+            ▶ Entrenamiento en curso: <strong>{workout.dayName}</strong> — continuar
+          </button>
+        )}
         {tab === 'plan' && (
           <PlanScreen
             profile={profile}
@@ -78,6 +116,32 @@ export default function App() {
             activePlanId={activePlanId}
             onSavePlans={savePlans}
             onSetActive={saveActive}
+            history={history}
+            onStartWorkout={beginWorkout}
+          />
+        )}
+        {tab === 'workout' && workout && (
+          <WorkoutScreen
+            workout={workout}
+            history={history}
+            exercises={exercises}
+            profile={profile}
+            settings={settings}
+            onChange={saveWorkout}
+            onSwapInPlan={swapInPlan}
+            onDiscard={() => { saveWorkout(null); setTab('plan'); }}
+            onFinish={() => {
+              saveHistory([finishWorkout(workout), ...history]);
+              saveWorkout(null);
+              setTab('progress');
+            }}
+          />
+        )}
+        {tab === 'progress' && (
+          <ProgressScreen
+            history={history}
+            targetDays={activePlan?.request?.daysPerWeek}
+            onDelete={(id) => saveHistory(history.filter((w) => w.id !== id))}
           />
         )}
         {tab === 'search' && (
@@ -98,6 +162,7 @@ export default function App() {
           <SettingsScreen
             settings={settings}
             onSave={saveSettings}
+            onEditProfile={() => setTab('profile')}
             onResetAll={() => {
               localStorage.clear();
               clearAiCache();
@@ -105,6 +170,8 @@ export default function App() {
               setProfile(null);
               setPlans([]);
               setActivePlanId(null);
+              setHistory([]);
+              setWorkout(null);
               setSettings(DEFAULT_SETTINGS);
               setOnboardingKey(DEFAULT_SETTINGS);
             }}
@@ -113,7 +180,11 @@ export default function App() {
       </main>
       <nav className="tabbar">
         {TABS.map(([key, icon, label]) => (
-          <button key={key} className={tab === key ? 'active' : ''} onClick={() => setTab(key)}>
+          <button
+            key={key}
+            className={tab === key || (key === 'plan' && tab === 'workout') || (key === 'settings' && tab === 'profile') ? 'active' : ''}
+            onClick={() => setTab(key)}
+          >
             <span aria-hidden>{icon}</span>
             {label}
           </button>

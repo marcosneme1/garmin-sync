@@ -59,12 +59,17 @@ export function ApiKeyFields({ value, onChange }) {
   );
 }
 
-export default function SettingsScreen({ settings, onSave, onResetAll }) {
+export default function SettingsScreen({ settings, onSave, onResetAll, onEditProfile }) {
   const [draft, setDraft] = useState(settings);
   const [saved, setSaved] = useState(false);
 
   return (
     <div>
+      <section className="card">
+        <h2>Mi perfil</h2>
+        <p className="small muted">Edad, peso, equipamiento, lesiones, objetivo y disponibilidad.</p>
+        <button className="btn btn-secondary btn-small" onClick={onEditProfile}>Editar mi perfil</button>
+      </section>
       <section className="card">
         <h2>Gemini</h2>
         <ApiKeyFields value={draft} onChange={(v) => { setDraft(v); setSaved(false); }} />
@@ -80,7 +85,7 @@ export default function SettingsScreen({ settings, onSave, onResetAll }) {
         </p>
         <button
           className="btn btn-danger btn-small"
-          onClick={() => window.confirm('¿Borrar perfil, planes, galería de GIFs y API key de este teléfono?') && onResetAll()}
+          onClick={() => window.confirm('¿Borrar perfil, planes, historial de entrenamientos, galería de GIFs y API key de este teléfono?') && onResetAll()}
         >
           Borrar todos mis datos
         </button>
