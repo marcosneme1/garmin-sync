@@ -1,23 +1,38 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Browser } from '@capacitor/browser';
 import ExerciseAnimation from './ExerciseAnimation.jsx';
 import { CATEGORY_ES, LEVEL_ES, equipmentEs, muscleEs } from '../lib/exercises.js';
 import { translateInstructions } from '../lib/gemini.js';
-
-const translations = new Map(); // cache en memoria por ejercicio
+import { cacheKey, getCached } from '../lib/aiCache.js';
+import { ensureGif, getGifUrl, loadGallery } from '../lib/gallery.js';
 
 export default function ExerciseDetail({ exercise, settings, displayName }) {
-  const [tr, setTr] = useState(() => translations.get(exercise.id) ?? null);
+  const [tr, setTr] = useState(() => getCached(cacheKey('tr', exercise.id)));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [gifStatus, setGifStatus] = useState(() => (getGifUrl(exercise.id) ? 'saved' : 'saving'));
+  const spanishName = displayName || tr?.nombre;
+
+  // Primera vez que se abre: armar el GIF y guardarlo en la galeria.
+  useEffect(() => {
+    let alive = true;
+    loadGallery()
+      .then(() => {
+        const wasSaved = !!getGifUrl(exercise.id);
+        return ensureGif(exercise, spanishName).then(() => wasSaved);
+      })
+      .then((wasSaved) => alive && setGifStatus(wasSaved ? 'saved' : 'new'))
+      .catch(() => alive && setGifStatus('error'));
+    return () => {
+      alive = false;
+    };
+  }, [exercise, spanishName]);
 
   const translate = async () => {
     setLoading(true);
     setError('');
     try {
-      const res = await translateInstructions(settings, exercise);
-      translations.set(exercise.id, res);
-      setTr(res);
+      setTr(await translateInstructions(settings, exercise));
     } catch (e) {
       setError(e.message);
     } finally {
@@ -35,6 +50,12 @@ export default function ExerciseDetail({ exercise, settings, displayName }) {
   return (
     <div className="detail">
       <ExerciseAnimation exercise={exercise} />
+      <p className="small muted gif-status">
+        {gifStatus === 'saving' && 'Guardando GIF en tu galería…'}
+        {gifStatus === 'new' && '✓ GIF guardado en tu galería'}
+        {gifStatus === 'saved' && '✓ En tu galería (disponible sin internet)'}
+        {gifStatus === 'error' && 'No se pudo guardar el GIF (¿sin conexión?)'}
+      </p>
       <h3>{displayName || tr?.nombre || exercise.name}</h3>
       {(displayName || tr?.nombre) && <p className="muted small">{exercise.name}</p>}
       <div className="chips">

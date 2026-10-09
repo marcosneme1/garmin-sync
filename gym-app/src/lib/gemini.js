@@ -2,6 +2,7 @@
 // La API key la carga el usuario en Ajustes y queda guardada solo en el telefono.
 
 import { equipmentEs, muscleEs } from './exercises.js';
+import { cacheKey, cached } from './aiCache.js';
 
 const BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
@@ -150,7 +151,8 @@ Respondé SOLO JSON: {"alternativas":[{"exerciseId": string, "nombre": string, "
 CATÁLOGO (exerciseId | músculos | equipamiento | categoría)
 ${catalog(pool)}`;
 
-  const res = await generateJson(settings, prompt, 0.4);
+  const key = cacheKey('alt', exercise.id, reason, [...profile.equipment].sort().join(','), profile.injuries);
+  const res = await cached(key, () => generateJson(settings, prompt, 0.4));
   return res.alternativas ?? [];
 }
 
@@ -161,7 +163,7 @@ Respondé SOLO JSON: {"resultados":[{"exerciseId": string, "nombre": string}]} c
 
 CATÁLOGO (exerciseId | músculos | equipamiento | categoría)
 ${catalog(exercises)}`;
-  const res = await generateJson(settings, prompt, 0.2);
+  const res = await cached(cacheKey('search', query), () => generateJson(settings, prompt, 0.2));
   return res.resultados ?? [];
 }
 
@@ -172,5 +174,5 @@ Pasos:
 ${exercise.instructions.map((s, i) => `${i + 1}. ${s}`).join('\n')}
 
 Respondé SOLO JSON: {"nombre": string, "pasos": [string]}`;
-  return generateJson(settings, prompt, 0.2);
+  return cached(cacheKey('tr', exercise.id), () => generateJson(settings, prompt, 0.2));
 }

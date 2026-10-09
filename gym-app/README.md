@@ -21,7 +21,15 @@ entrenamiento con Gemini.
   motivo, o búsqueda libre. Se mantienen series, repeticiones y descanso.
   También se puede editar, quitar y agregar ejercicios.
 
-Todo (perfil, planes, API key) se guarda solo en el teléfono.
+- **Galería**: la primera vez que abrís un ejercicio, la app arma un GIF
+  animado con sus fotos y lo guarda en el teléfono (IndexedDB). Desde ese
+  momento se muestra el GIF guardado, también sin internet, y la pestaña
+  "Galería" junta todos los guardados (con filtro y opción de quitar).
+- **Respuestas de Gemini guardadas**: búsquedas con IA, traducciones y
+  alternativas sugeridas se guardan; repetir la misma consulta no vuelve a
+  llamar a Gemini.
+
+Todo (perfil, planes, galería, API key) se guarda solo en el teléfono.
 
 ## API key de Gemini
 

@@ -5,10 +5,14 @@ import ProfileForm from './screens/ProfileForm.jsx';
 import PlanScreen from './screens/PlanScreen.jsx';
 import SettingsScreen, { ApiKeyFields } from './screens/SettingsScreen.jsx';
 import SearchPanel from './components/SearchPanel.jsx';
+import GalleryScreen from './screens/GalleryScreen.jsx';
+import { clearGallery, loadGallery } from './lib/gallery.js';
+import { clearAiCache } from './lib/aiCache.js';
 
 const TABS = [
   ['plan', '📋', 'Plan'],
-  ['search', '🔍', 'Ejercicios'],
+  ['search', '🔍', 'Buscar'],
+  ['gallery', '🎞️', 'Galería'],
   ['profile', '👤', 'Perfil'],
   ['settings', '⚙️', 'Ajustes'],
 ];
@@ -25,6 +29,7 @@ export default function App() {
 
   useEffect(() => {
     loadExercises().then(setExercises).catch((e) => setLoadError(e.message));
+    loadGallery();
   }, []);
 
   const saveProfile = (p) => { storage.setProfile(p); setProfile(p); };
@@ -81,6 +86,7 @@ export default function App() {
             <SearchPanel exercises={exercises} settings={settings} />
           </>
         )}
+        {tab === 'gallery' && <GalleryScreen settings={settings} />}
         {tab === 'profile' && (
           <>
             <h2>Mi perfil</h2>
@@ -94,6 +100,8 @@ export default function App() {
             onSave={saveSettings}
             onResetAll={() => {
               localStorage.clear();
+              clearAiCache();
+              clearGallery().catch(() => {});
               setProfile(null);
               setPlans([]);
               setActivePlanId(null);

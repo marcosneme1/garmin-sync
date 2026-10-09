@@ -13,6 +13,7 @@
   "dependencies": {
     "@capacitor/browser": "^8.0.5",
     "@capacitor/core": "^8.5.3",
+    "gifenc": "^1.0.3",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },

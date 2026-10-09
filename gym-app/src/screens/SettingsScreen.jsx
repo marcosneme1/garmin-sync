@@ -80,7 +80,7 @@ export default function SettingsScreen({ settings, onSave, onResetAll }) {
         </p>
         <button
           className="btn btn-danger btn-small"
-          onClick={() => window.confirm('¿Borrar perfil, planes y API key de este teléfono?') && onResetAll()}
+          onClick={() => window.confirm('¿Borrar perfil, planes, galería de GIFs y API key de este teléfono?') && onResetAll()}
         >
           Borrar todos mis datos
         </button>

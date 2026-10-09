@@ -4,6 +4,7 @@ import ExerciseDetail from './ExerciseDetail.jsx';
 import Modal from './Modal.jsx';
 import { resolveExercise, searchExercises } from '../lib/exercises.js';
 import { aiSearch } from '../lib/gemini.js';
+import { cacheKey, getCached } from '../lib/aiCache.js';
 
 // Buscador de ejercicios. Si se pasa `onPick`, cada resultado tiene un boton
 // para elegirlo (agregar/reemplazar en un plan).
@@ -19,21 +20,24 @@ export default function SearchPanel({ exercises, settings, onPick, pickLabel = '
     [exercises, query],
   );
 
+  const toResults = (q, res) => {
+    const items = [];
+    const labels = {};
+    for (const r of res) {
+      const ex = resolveExercise(exercises, r.exerciseId, null);
+      if (ex && !labels[ex.id]) {
+        items.push(ex);
+        labels[ex.id] = r.nombre;
+      }
+    }
+    return { query: q, items, labels };
+  };
+
   const runAi = async () => {
     setLoading(true);
     setError('');
     try {
-      const res = await aiSearch(settings, query, exercises);
-      const items = [];
-      const labels = {};
-      for (const r of res) {
-        const ex = resolveExercise(exercises, r.exerciseId, null);
-        if (ex && !labels[ex.id]) {
-          items.push(ex);
-          labels[ex.id] = r.nombre;
-        }
-      }
-      setAiResults({ query, items, labels });
+      setAiResults(toResults(query, await aiSearch(settings, query, exercises)));
     } catch (e) {
       setError(e.message);
     } finally {
@@ -41,7 +45,15 @@ export default function SearchPanel({ exercises, settings, onPick, pickLabel = '
     }
   };
 
-  const showAi = aiResults && aiResults.query === query;
+  // Si esta busqueda ya se hizo con IA antes, mostrar lo guardado sin consultar.
+  const saved = useMemo(() => {
+    const hit = query.trim().length >= 2 && getCached(cacheKey('search', query));
+    return hit ? toResults(query, hit.resultados ?? []) : null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, aiResults, exercises]);
+
+  const ai = aiResults && aiResults.query === query ? aiResults : saved;
+  const showAi = !!ai;
 
   return (
     <div className="search">
@@ -63,11 +75,11 @@ export default function SearchPanel({ exercises, settings, onPick, pickLabel = '
 
       {showAi && (
         <>
-          <h4>Resultados de Gemini</h4>
-          {aiResults.items.length ? (
+          <h4>Resultados de Gemini{ai === saved && aiResults?.query !== query ? ' (guardados)' : ''}</h4>
+          {ai.items.length ? (
             <ExerciseList
-              items={aiResults.items}
-              labels={aiResults.labels}
+              items={ai.items}
+              labels={ai.labels}
               onSelect={setSelected}
               onAction={onPick}
               actionLabel={pickLabel}
@@ -92,7 +104,7 @@ export default function SearchPanel({ exercises, settings, onPick, pickLabel = '
           <ExerciseDetail
             exercise={selected}
             settings={settings}
-            displayName={showAi ? aiResults.labels[selected.id] : undefined}
+            displayName={showAi ? ai.labels[selected.id] : undefined}
           />
           {onPick && (
             <button

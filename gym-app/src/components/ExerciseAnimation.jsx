@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { imageUrls } from '../lib/exercises.js';
+import { getGifUrl, useGallery } from '../lib/gallery.js';
 
-// Alterna las fotos de posicion inicial/final del ejercicio, como un GIF.
+// Muestra el GIF guardado en la galeria; si todavia no existe, alterna las
+// fotos de posicion inicial/final descargadas de internet.
 export default function ExerciseAnimation({ exercise, size = 'large', interval = 900 }) {
-  const urls = imageUrls(exercise);
+  useGallery();
+  const gif = getGifUrl(exercise?.id);
+  const urls = gif ? [] : imageUrls(exercise);
   const [frame, setFrame] = useState(0);
   const [failed, setFailed] = useState(false);
 
@@ -14,6 +18,14 @@ export default function ExerciseAnimation({ exercise, size = 'large', interval =
     const t = setInterval(() => setFrame((f) => (f + 1) % urls.length), interval);
     return () => clearInterval(t);
   }, [exercise?.id, interval, urls.length]);
+
+  if (gif) {
+    return (
+      <div className={`anim anim-${size}`}>
+        <img src={gif} alt={exercise.name} className="visible" />
+      </div>
+    );
+  }
 
   if (!urls.length || failed) {
     return <div className={`anim anim-${size} anim-empty`}>Sin imagen{failed ? ' (¿sin conexión?)' : ''}</div>;
