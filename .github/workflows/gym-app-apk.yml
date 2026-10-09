@@ -1,0 +1,54 @@
+name: GymPlan APK
+
+on:
+  push:
+    paths:
+      - 'gym-app/**'
+      - '.github/workflows/gym-app-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gym-app
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: gym-app/package-lock.json
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar la web app
+        run: npm run build
+
+      - name: Generar proyecto Android
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Compilar APK
+        working-directory: gym-app/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Renombrar APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk GymPlan.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GymPlan-apk
+          path: gym-app/GymPlan.apk
+          if-no-files-found: error

@@ -1,0 +1,67 @@
+# GymPlan
+
+App de gimnasio para Android (React + Capacitor) que arma planes de
+entrenamiento con Gemini.
+
+## Qué hace
+
+- **Pantalla inicial**: pide edad, sexo, peso, altura, nivel de actividad,
+  experiencia con pesas, otros deportes, equipamiento disponible, lesiones,
+  ejercicios a evitar, objetivo, días por semana y minutos por sesión.
+- **Planes con Gemini**: genera un plan según días por semana y minutos por
+  sesión. Gemini solo puede elegir ejercicios de la base local, así todos
+  tienen imagen. Se pueden guardar varios planes.
+- **Buscador**: buscás en español ("press banca inclinado", "jalón al pecho")
+  y muestra el ejercicio animado (alterna las fotos de posición inicial y
+  final), músculos, equipamiento e instrucciones. Si no encuentra nada,
+  "Buscar con IA" le pide a Gemini que interprete la búsqueda. Incluye botones
+  para traducir las instrucciones y para abrir videos en YouTube.
+- **Cambiar un ejercicio** (por ejemplo, si falta la máquina): alternativas
+  del mismo músculo ordenadas por parecido, sugerencias de Gemini con el
+  motivo, o búsqueda libre. Se mantienen series, repeticiones y descanso.
+  También se puede editar, quitar y agregar ejercicios.
+
+Todo (perfil, planes, API key) se guarda solo en el teléfono.
+
+## API key de Gemini
+
+Se crea gratis en <https://aistudio.google.com/apikey> y se carga en la app
+(paso final de la pantalla inicial o en Ajustes). El botón "Probar key y
+cargar modelos" lista los modelos habilitados para esa key. El modelo por
+defecto es `gemini-2.5-flash`; si deja de estar disponible, elegí otro de la
+lista.
+
+## Obtener el APK
+
+Cada push que toca `gym-app/` dispara el workflow
+`.github/workflows/gym-app-apk.yml` (también se puede correr a mano desde la
+pestaña Actions → "GymPlan APK" → "Run workflow"). Al terminar, descargá el
+artifact **GymPlan-apk** (viene en un .zip), copiá `GymPlan.apk` al teléfono e
+instalalo habilitando "Instalar apps de origen desconocido".
+
+Es un APK *debug* (firmado con la clave de depuración): sirve para uso
+personal, no para publicar en Play Store.
+
+## Desarrollo
+
+```bash
+npm install
+npm run dev               # abre la app en el navegador
+npm run build             # genera dist/
+npm run fetch-exercises   # actualiza public/exercises.json
+```
+
+Compilar el APK localmente (requiere Android Studio / Android SDK y JDK 21):
+
+```bash
+npm run build
+npx cap add android       # solo la primera vez
+npx cap sync android
+cd android && ./gradlew assembleDebug
+```
+
+## Datos de ejercicios
+
+[free-exercise-db](https://github.com/yuhonas/free-exercise-db) (dominio
+público, Unlicense): ~870 ejercicios con 2 fotos cada uno. Las imágenes se
+descargan de GitHub la primera vez que se ven, así que hace falta conexión.

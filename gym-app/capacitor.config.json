@@ -1,0 +1,8 @@
+{
+  "appId": "com.marcosneme.gymapp",
+  "appName": "GymPlan",
+  "webDir": "dist",
+  "plugins": {
+    "CapacitorHttp": { "enabled": true }
+  }
+}
