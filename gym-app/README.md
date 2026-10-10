@@ -45,9 +45,11 @@ Todo (perfil, planes, historial, galería, API key) se guarda solo en el teléfo
 
 Se crea gratis en <https://aistudio.google.com/apikey> y se carga en la app
 (paso final de la pantalla inicial o en Ajustes). El botón "Probar key y
-cargar modelos" lista los modelos habilitados para esa key. El modelo por
-defecto es `gemini-2.5-flash`; si deja de estar disponible, elegí otro de la
-lista.
+cargar modelos" lista los modelos habilitados para esa key. Por defecto el
+modelo está en "Automático": la app usa el Flash estable más nuevo que tenga
+la key y, si Google retira un modelo (pasó con `gemini-2.5-flash` para
+usuarios nuevos), elige otro y reintenta sola. También se puede fijar uno a
+mano.
 
 ## Obtener el APK
 

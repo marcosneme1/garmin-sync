@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Browser } from '@capacitor/browser';
-import { listModels } from '../lib/gemini.js';
+import { AUTO_MODEL, listModels, pickBestModel } from '../lib/gemini.js';
 
 export function ApiKeyFields({ value, onChange }) {
   const [models, setModels] = useState([]);
+  const [auto, setAuto] = useState('');
   const [status, setStatus] = useState('');
   const [show, setShow] = useState(false);
 
@@ -12,6 +13,7 @@ export function ApiKeyFields({ value, onChange }) {
     try {
       const list = await listModels(value.apiKey);
       setModels(list);
+      setAuto(pickBestModel(list) ?? '');
       setStatus(`✓ La key funciona (${list.length} modelos disponibles).`);
     } catch (e) {
       setStatus(`✗ ${e.message}`);
@@ -42,14 +44,14 @@ export function ApiKeyFields({ value, onChange }) {
       </div>
       <div className="field">
         <span>Modelo</span>
-        {models.length ? (
-          <select className="input" value={value.model} onChange={(e) => onChange({ ...value, model: e.target.value })}>
-            {!models.includes(value.model) && <option value={value.model}>{value.model}</option>}
-            {models.map((m) => <option key={m}>{m}</option>)}
-          </select>
-        ) : (
-          <input className="input" value={value.model} onChange={(e) => onChange({ ...value, model: e.target.value.trim() })} />
-        )}
+        <select className="input" value={value.model} onChange={(e) => onChange({ ...value, model: e.target.value })}>
+          <option value={AUTO_MODEL}>Automático (recomendado){auto ? ` · ${auto}` : ''}</option>
+          {value.model !== AUTO_MODEL && !models.includes(value.model) && <option value={value.model}>{value.model}</option>}
+          {models.map((m) => <option key={m}>{m}</option>)}
+        </select>
+        <span className="small muted">
+          En automático la app usa el modelo Flash más nuevo disponible y cambia sola si Google retira uno.
+        </span>
       </div>
       <button className="btn btn-secondary btn-small" onClick={test} disabled={!value.apiKey}>
         Probar key y cargar modelos

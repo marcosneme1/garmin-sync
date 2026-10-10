@@ -6,6 +6,13 @@ import { cacheKey, cached } from './aiCache.js';
 
 const BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
+class GeminiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
+
 async function call(path, apiKey, init = {}) {
   if (!apiKey) throw new Error('Falta la API key de Gemini. Cargala en Ajustes.');
   const res = await fetch(`${BASE}/${path}`, {
@@ -15,7 +22,7 @@ async function call(path, apiKey, init = {}) {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = body?.error?.message ?? `HTTP ${res.status}`;
-    throw new Error(`Gemini: ${msg}`);
+    throw new GeminiError(`Gemini: ${msg}`, res.status);
   }
   return body;
 }
@@ -28,7 +35,81 @@ export async function listModels(apiKey) {
     .filter((n) => n.startsWith('gemini'));
 }
 
-async function generateJson({ apiKey, model }, prompt, temperature = 0.6) {
+// ---------- Eleccion de modelo ----------
+// Google retira modelos seguido (y a veces solo para usuarios nuevos), asi que
+// por defecto ("auto") la app elige el Flash estable mas nuevo que la key tenga
+// disponible, y si un modelo deja de andar elige otro y reintenta.
+
+export const AUTO_MODEL = 'auto';
+const AUTO_KEY = 'gym.autoModel';
+const EXCLUDE = /lite|image|tts|audio|live|embed|vision|thinking|exp|preview|learnlm|robotics|computer/;
+const unavailable = new Set(); // modelos que fallaron en esta sesion
+
+export function pickBestModel(models) {
+  const usable = models.filter((m) => !unavailable.has(m));
+  const version = (m) => Number(m.match(/^gemini-(\d+(?:\.\d+)?)/)?.[1] ?? 0);
+  const byVersion = (a, b) => version(b) - version(a);
+  const stableFlash = usable.filter((m) => /^gemini-\d+(\.\d+)?-flash$/.test(m)).sort(byVersion);
+  if (stableFlash.length) return stableFlash[0];
+  if (usable.includes('gemini-flash-latest')) return 'gemini-flash-latest';
+  // Un Flash en preview antes que un Pro: mas rapido y con mas cuota gratuita.
+  const anyFlash = usable
+    .filter((m) => m.includes('flash') && !/lite|image|tts|audio|live|embed|thinking/.test(m))
+    .sort(byVersion);
+  if (anyFlash.length) return anyFlash[0];
+  const any = usable.filter((m) => !EXCLUDE.test(m)).sort(byVersion);
+  return any[0] ?? usable[0] ?? null;
+}
+
+async function resolveModel(settings, { refresh = false } = {}) {
+  const chosen = settings.model && settings.model !== AUTO_MODEL ? settings.model : null;
+  if (chosen && !unavailable.has(chosen)) return chosen;
+  if (!refresh) {
+    try {
+      const saved = localStorage.getItem(AUTO_KEY);
+      if (saved && !unavailable.has(saved)) return saved;
+    } catch {
+      // sin almacenamiento
+    }
+  }
+  const best = pickBestModel(await listModels(settings.apiKey));
+  if (!best) throw new Error('Tu API key no tiene ningún modelo de Gemini disponible.');
+  try {
+    localStorage.setItem(AUTO_KEY, best);
+  } catch {
+    // sin almacenamiento
+  }
+  return best;
+}
+
+// Errores que indican que el modelo no existe o fue retirado (no de cuota ni de key).
+const isModelGone = (e) =>
+  e instanceof GeminiError &&
+  (e.status === 404 || /no longer available|not found|not supported|deprecated|retired/i.test(e.message));
+
+async function generateJson(settings, prompt, temperature = 0.6) {
+  let model = await resolveModel(settings);
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await generateWith(settings.apiKey, model, prompt, temperature);
+    } catch (e) {
+      if (!isModelGone(e) || attempt >= 2) throw e;
+      unavailable.add(model);
+      // Si era un modelo elegido a mano, volver a "auto" para las proximas veces.
+      if (settings.model === model) {
+        try {
+          const stored = JSON.parse(localStorage.getItem('gym.settings') ?? '{}');
+          localStorage.setItem('gym.settings', JSON.stringify({ ...stored, model: AUTO_MODEL }));
+        } catch {
+          // sin almacenamiento
+        }
+      }
+      model = await resolveModel({ ...settings, model: AUTO_MODEL }, { refresh: true });
+    }
+  }
+}
+
+async function generateWith(apiKey, model, prompt, temperature) {
   const body = await call(`models/${encodeURIComponent(model)}:generateContent`, apiKey, {
     method: 'POST',
     body: JSON.stringify({

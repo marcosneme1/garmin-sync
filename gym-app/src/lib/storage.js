@@ -25,7 +25,8 @@ function write(key, value) {
   }
 }
 
-export const DEFAULT_SETTINGS = { apiKey: '', model: 'gemini-2.5-flash' };
+// model 'auto': la app elige el mejor modelo disponible para la key (ver gemini.js).
+export const DEFAULT_SETTINGS = { apiKey: '', model: 'auto' };
 
 export const storage = {
   getProfile: () => read(KEYS.profile, null),
