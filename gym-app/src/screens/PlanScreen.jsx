@@ -293,7 +293,7 @@ export default function PlanScreen({
           <p className="sets">
             {viewing.item.series} × {viewing.item.repeticiones} · descanso {viewing.item.descansoSeg}s
           </p>
-          <ExerciseDetail exercise={viewing.ex} displayName={viewing.item.nombre} />
+          <ExerciseDetail exercise={viewing.ex} settings={settings} displayName={viewing.item.nombre} />
         </Modal>
       )}
 

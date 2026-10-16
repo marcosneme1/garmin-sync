@@ -10,7 +10,7 @@ const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 // nombre en ingles: en ese caso se muestra el nombre traducido.
 const recName = (r) => (r.name && r.name !== r.originalName ? r.name : exName(getExercise(r.id)) || r.name);
 
-export default function GalleryScreen() {
+export default function GalleryScreen({ settings }) {
   useGallery();
   const [filter, setFilter] = useState('');
   const [selected, setSelected] = useState(null);
@@ -60,7 +60,7 @@ export default function GalleryScreen() {
       {selected && (
         <Modal title={selected.name} onClose={() => setSelected(null)}>
           {getExercise(selected.id) ? (
-            <ExerciseDetail exercise={getExercise(selected.id)} displayName={selected.name} />
+            <ExerciseDetail exercise={getExercise(selected.id)} settings={settings} displayName={selected.name} />
           ) : (
             <img className="gallery-full" src={getGifUrl(selected.id)} alt={selected.name} />
           )}

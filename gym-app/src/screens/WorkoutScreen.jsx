@@ -237,7 +237,7 @@ export default function WorkoutScreen({
 
       {viewing && (
         <Modal title={viewing.ex.nombre} onClose={() => setViewing(null)}>
-          <ExerciseDetail exercise={viewing.dbEx} displayName={viewing.ex.nombre} />
+          <ExerciseDetail exercise={viewing.dbEx} settings={settings} displayName={viewing.ex.nombre} />
         </Modal>
       )}
 

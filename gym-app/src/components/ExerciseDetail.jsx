@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Browser } from '@capacitor/browser';
 import ExerciseAnimation from './ExerciseAnimation.jsx';
-import { CATEGORY_ES, LEVEL_ES, equipmentEs, exName, exSteps, muscleEs } from '../lib/exercises.js';
+import { CATEGORY_ES, LEVEL_ES, equipmentEs, exSteps, muscleEs } from '../lib/exercises.js';
 import { ensureGif, getGifUrl, loadGallery } from '../lib/gallery.js';
+import { translateInstructions } from '../lib/gemini.js';
+import { cacheKey, getCached } from '../lib/aiCache.js';
 
-export default function ExerciseDetail({ exercise, displayName }) {
+export default function ExerciseDetail({ exercise, settings, displayName }) {
   const [showOriginal, setShowOriginal] = useState(false);
+  // Traduccion hecha con Gemini (por si algun ejercicio no tiene la incluida
+  // o se quiere otra version). Queda guardada y no se vuelve a pedir.
+  const [tr, setTr] = useState(() => getCached(cacheKey('tr', exercise.id)));
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [gifStatus, setGifStatus] = useState(() => (getGifUrl(exercise.id) ? 'saved' : 'saving'));
   const spanishName = displayName || exercise.nombre;
 
@@ -29,7 +36,21 @@ export default function ExerciseDetail({ exercise, displayName }) {
       url: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${exercise.name} exercise technique`)}`,
     });
 
-  const steps = showOriginal ? exercise.instructions : exSteps(exercise);
+  const translate = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      setTr(await translateInstructions(settings, exercise));
+      setShowOriginal(false);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const steps = showOriginal ? exercise.instructions : tr?.pasos?.length ? tr.pasos : exSteps(exercise);
+  const hasSpanish = !!(tr?.pasos?.length || exercise.pasos?.length);
 
   return (
     <div className="detail">
@@ -40,8 +61,8 @@ export default function ExerciseDetail({ exercise, displayName }) {
         {gifStatus === 'saved' && '✓ En tu galería (disponible sin internet)'}
         {gifStatus === 'error' && 'No se pudo guardar el GIF (¿sin conexión?)'}
       </p>
-      <h3>{displayName || exName(exercise)}</h3>
-      {exName(exercise) !== exercise.name && <p className="muted small">{exercise.name}</p>}
+      <h3>{displayName || exercise.nombre || tr?.nombre || exercise.name}</h3>
+      {(displayName || exercise.nombre || tr?.nombre) && <p className="muted small">{exercise.name}</p>}
       <div className="chips">
         {exercise.primaryMuscles.map((m) => (
           <span key={m} className="chip chip-primary">{muscleEs(m)}</span>
@@ -55,6 +76,7 @@ export default function ExerciseDetail({ exercise, displayName }) {
       </div>
 
       <h4>Cómo se hace</h4>
+      {tr && !showOriginal && <p className="muted small">Traducción hecha con IA (Gemini)</p>}
       <ol className="steps">
         {steps.map((s, i) => (
           <li key={i}>{s}</li>
@@ -63,12 +85,18 @@ export default function ExerciseDetail({ exercise, displayName }) {
 
       <div className="row gap">
         <button className="btn btn-secondary" onClick={openVideo}>Ver videos en YouTube</button>
-        {exercise.pasos?.length > 0 && (
+        {!tr && settings?.apiKey && (
+          <button className="btn btn-secondary" onClick={translate} disabled={loading}>
+            {loading ? 'Traduciendo…' : exercise.pasos?.length ? 'Traducir con IA' : 'Traducir al español'}
+          </button>
+        )}
+        {hasSpanish && (
           <button className="btn btn-secondary btn-small" onClick={() => setShowOriginal((v) => !v)}>
             {showOriginal ? 'Ver en español' : 'Ver original (inglés)'}
           </button>
         )}
       </div>
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }

@@ -298,3 +298,13 @@ ${catalog(exercises)}`;
   const res = await cached(cacheKey('search', query), () => generateJson(settings, prompt, 0.2));
   return res.resultados ?? [];
 }
+
+export async function translateInstructions(settings, exercise) {
+  const prompt = `Traducí al español rioplatense, de forma clara y breve, el nombre y los pasos de este ejercicio de gimnasio. Mantené la numeración de pasos.
+Nombre: ${exercise.name}
+Pasos:
+${exercise.instructions.map((s, i) => `${i + 1}. ${s}`).join('\n')}
+
+Respondé SOLO JSON: {"nombre": string, "pasos": [string]}`;
+  return cached(cacheKey('tr', exercise.id), () => generateJson(settings, prompt, 0.2));
+}

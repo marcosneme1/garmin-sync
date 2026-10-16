@@ -20,7 +20,8 @@ entrenamiento con Gemini.
   dentro de `public/exercises.json` (campos `nombre` y `pasos`), así que no
   hace falta Gemini ni internet para leerlos. Desde el detalle se puede ver
   el texto original en inglés. La traducción es automática: puede haber
-  términos para corregir.
+  términos para corregir. El botón "Traducir con IA" sigue disponible (con
+  API key) por si algún ejercicio queda en inglés o se quiere otra versión.
 - **Cambiar un ejercicio** (por ejemplo, si falta la máquina): alternativas
   del mismo músculo ordenadas por parecido, sugerencias de Gemini con el
   motivo, o búsqueda libre. Se mantienen series, repeticiones y descanso.
@@ -30,7 +31,7 @@ entrenamiento con Gemini.
   animado con sus fotos y lo guarda en el teléfono (IndexedDB). Desde ese
   momento se muestra el GIF guardado, también sin internet, y la pestaña
   "Galería" junta todos los guardados (con filtro y opción de quitar).
-- **Respuestas de Gemini guardadas**: búsquedas con IA y
+- **Respuestas de Gemini guardadas**: búsquedas con IA, traducciones y
   alternativas sugeridas se guardan; repetir la misma consulta no vuelve a
   llamar a Gemini.
 
