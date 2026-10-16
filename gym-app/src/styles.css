@@ -260,3 +260,5 @@ textarea.input { resize: vertical; }
   background: var(--surface-2); border: 1px solid var(--accent); border-radius: var(--radius); font-size: 0.9rem;
 }
 .install-hint p { margin: 0; flex: 1; }
+.install-hint-body { flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.install-hint-body a.btn { text-decoration: none; }
