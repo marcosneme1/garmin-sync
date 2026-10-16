@@ -87,24 +87,75 @@ const isModelGone = (e) =>
   e instanceof GeminiError &&
   (e.status === 404 || /no longer available|not found|not supported|deprecated|retired/i.test(e.message));
 
+// Saturacion o limite de uso: suele ser temporal y por modelo, asi que se
+// reintenta y, si sigue, se prueba con otro modelo disponible.
+const isBusy = (e) =>
+  e instanceof GeminiError &&
+  (e.status === 503 || e.status === 429 || /high demand|overloaded|try again later|resource.?exhausted/i.test(e.message));
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Orden de modelos alternativos cuando el elegido esta saturado.
+export function fallbackOrder(models) {
+  const version = (m) => Number(m.match(/^gemini-(\d+(?:\.\d+)?)/)?.[1] ?? 0);
+  const groups = [
+    (m) => /^gemini-\d+(\.\d+)?-flash$/.test(m),
+    (m) => m === 'gemini-flash-latest',
+    (m) => m.includes('flash') && !/lite|image|tts|audio|live|embed|thinking/.test(m),
+    (m) => /flash-lite/.test(m) && !/image|tts|audio|live|preview|exp/.test(m),
+    (m) => !EXCLUDE.test(m),
+  ];
+  const out = [];
+  for (const g of groups) {
+    for (const m of models.filter(g).sort((a, b) => version(b) - version(a))) {
+      if (!out.includes(m)) out.push(m);
+    }
+  }
+  return out;
+}
+
 async function generateJson(settings, prompt, temperature = 0.6) {
   let model = await resolveModel(settings);
-  for (let attempt = 0; ; attempt++) {
+  let goneRetries = 0;
+  let retriedSame = false;
+  const busy = new Set();
+  let models = null;
+  for (;;) {
     try {
       return await generateWith(settings.apiKey, model, prompt, temperature);
     } catch (e) {
-      if (!isModelGone(e) || attempt >= 2) throw e;
-      unavailable.add(model);
-      // Si era un modelo elegido a mano, volver a "auto" para las proximas veces.
-      if (settings.model === model) {
-        try {
-          const stored = JSON.parse(localStorage.getItem('gym.settings') ?? '{}');
-          localStorage.setItem('gym.settings', JSON.stringify({ ...stored, model: AUTO_MODEL }));
-        } catch {
-          // sin almacenamiento
+      if (isModelGone(e) && goneRetries < 2) {
+        goneRetries++;
+        unavailable.add(model);
+        // Si era un modelo elegido a mano, volver a "auto" para las proximas veces.
+        if (settings.model === model) {
+          try {
+            const stored = JSON.parse(localStorage.getItem('gym.settings') ?? '{}');
+            localStorage.setItem('gym.settings', JSON.stringify({ ...stored, model: AUTO_MODEL }));
+          } catch {
+            // sin almacenamiento
+          }
         }
+        model = await resolveModel({ ...settings, model: AUTO_MODEL }, { refresh: true });
+        continue;
       }
-      model = await resolveModel({ ...settings, model: AUTO_MODEL }, { refresh: true });
+      if (!isBusy(e)) throw e;
+      if (!retriedSame) {
+        retriedSame = true;
+        await sleep(2500);
+        continue;
+      }
+      busy.add(model);
+      models ??= await listModels(settings.apiKey).catch(() => []);
+      const next = fallbackOrder(models).find((m) => !busy.has(m) && !unavailable.has(m));
+      if (!next || busy.size >= 3) {
+        throw new Error(
+          e.status === 429
+            ? 'Se alcanzó el límite de uso gratuito de Gemini de tu API key por ahora. Probá de nuevo más tarde.'
+            : 'Gemini está saturado en este momento (es un problema temporal de Google, no de tu key ni de la app). Probá de nuevo en unos minutos.',
+        );
+      }
+      model = next; // solo para esta consulta; no se guarda como preferido
     }
   }
 }
