@@ -2,7 +2,7 @@
 // - Pagina: primero red, si no hay conexion la copia guardada.
 // - Archivos de la app y base de ejercicios: copia guardada, actualizada en segundo plano.
 // - Gemini e imagenes externas: siempre por red (la galeria guarda sus GIFs aparte).
-const CACHE = 'gymplan-v1';
+const CACHE = 'gymplan-v2';
 const CORE = ['./', './index.html', './exercises.json', './manifest.webmanifest', './icons/icon-192.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {

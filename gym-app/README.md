@@ -14,8 +14,13 @@ entrenamiento con Gemini.
 - **Buscador**: buscás en español ("press banca inclinado", "jalón al pecho")
   y muestra el ejercicio animado (alterna las fotos de posición inicial y
   final), músculos, equipamiento e instrucciones. Si no encuentra nada,
-  "Buscar con IA" le pide a Gemini que interprete la búsqueda. Incluye botones
-  para traducir las instrucciones y para abrir videos en YouTube.
+  "Buscar con IA" le pide a Gemini que interprete la búsqueda. Incluye un
+  botón para abrir videos en YouTube.
+- **Todo en español**: los 876 ejercicios traen nombre y pasos traducidos
+  dentro de `public/exercises.json` (campos `nombre` y `pasos`), así que no
+  hace falta Gemini ni internet para leerlos. Desde el detalle se puede ver
+  el texto original en inglés. La traducción es automática: puede haber
+  términos para corregir.
 - **Cambiar un ejercicio** (por ejemplo, si falta la máquina): alternativas
   del mismo músculo ordenadas por parecido, sugerencias de Gemini con el
   motivo, o búsqueda libre. Se mantienen series, repeticiones y descanso.
@@ -25,7 +30,7 @@ entrenamiento con Gemini.
   animado con sus fotos y lo guarda en el teléfono (IndexedDB). Desde ese
   momento se muestra el GIF guardado, también sin internet, y la pestaña
   "Galería" junta todos los guardados (con filtro y opción de quitar).
-- **Respuestas de Gemini guardadas**: búsquedas con IA, traducciones y
+- **Respuestas de Gemini guardadas**: búsquedas con IA y
   alternativas sugeridas se guardan; repetir la misma consulta no vuelve a
   llamar a Gemini.
 
@@ -75,7 +80,7 @@ también a ese repositorio.
 npm install
 npm run dev               # abre la app en el navegador
 npm run build             # genera dist/
-npm run fetch-exercises   # actualiza public/exercises.json
+npm run fetch-exercises   # actualiza public/exercises.json (conserva las traducciones)
 ```
 
 Compilar el APK localmente (requiere Android Studio / Android SDK y JDK 21):

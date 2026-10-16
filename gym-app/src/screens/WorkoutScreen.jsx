@@ -3,7 +3,7 @@ import ExerciseAnimation from '../components/ExerciseAnimation.jsx';
 import ExerciseDetail from '../components/ExerciseDetail.jsx';
 import Modal from '../components/Modal.jsx';
 import SwapModal from '../components/SwapModal.jsx';
-import { getExercise } from '../lib/exercises.js';
+import { exName, getExercise } from '../lib/exercises.js';
 import { doneSets, lastPerformance, targetReps } from '../lib/workouts.js';
 
 const fmtClock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -125,7 +125,7 @@ export default function WorkoutScreen({
 
   const doSwap = (newEx, label) => {
     const ex = swapping.ex;
-    const nombre = label || newEx.name;
+    const nombre = label || exName(newEx);
     const last = lastPerformance(history, { exerciseId: newEx.id, nombre });
     updateEx(ex.id, (e) => ({
       ...e,
@@ -237,7 +237,7 @@ export default function WorkoutScreen({
 
       {viewing && (
         <Modal title={viewing.ex.nombre} onClose={() => setViewing(null)}>
-          <ExerciseDetail exercise={viewing.dbEx} settings={settings} displayName={viewing.ex.nombre} />
+          <ExerciseDetail exercise={viewing.dbEx} displayName={viewing.ex.nombre} />
         </Modal>
       )}
 

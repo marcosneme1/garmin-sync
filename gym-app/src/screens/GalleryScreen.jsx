@@ -1,17 +1,21 @@
 import { useState } from 'react';
 import ExerciseDetail from '../components/ExerciseDetail.jsx';
 import Modal from '../components/Modal.jsx';
-import { equipmentEs, getExercise, muscleEs } from '../lib/exercises.js';
+import { equipmentEs, exName, getExercise, muscleEs } from '../lib/exercises.js';
 import { deleteGif, getGifUrl, listGallery, useGallery } from '../lib/gallery.js';
 
 const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-export default function GalleryScreen({ settings }) {
+// GIFs guardados antes de tener los nombres en español quedaron con el
+// nombre en ingles: en ese caso se muestra el nombre traducido.
+const recName = (r) => (r.name && r.name !== r.originalName ? r.name : exName(getExercise(r.id)) || r.name);
+
+export default function GalleryScreen() {
   useGallery();
   const [filter, setFilter] = useState('');
   const [selected, setSelected] = useState(null);
 
-  const all = listGallery();
+  const all = listGallery().map((r) => ({ ...r, name: recName(r) }));
   const f = norm(filter.trim());
   const items = f
     ? all.filter((r) =>
@@ -56,7 +60,7 @@ export default function GalleryScreen({ settings }) {
       {selected && (
         <Modal title={selected.name} onClose={() => setSelected(null)}>
           {getExercise(selected.id) ? (
-            <ExerciseDetail exercise={getExercise(selected.id)} settings={settings} displayName={selected.name} />
+            <ExerciseDetail exercise={getExercise(selected.id)} displayName={selected.name} />
           ) : (
             <img className="gallery-full" src={getGifUrl(selected.id)} alt={selected.name} />
           )}

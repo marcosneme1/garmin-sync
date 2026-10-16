@@ -1,17 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Browser } from '@capacitor/browser';
 import ExerciseAnimation from './ExerciseAnimation.jsx';
-import { CATEGORY_ES, LEVEL_ES, equipmentEs, muscleEs } from '../lib/exercises.js';
-import { translateInstructions } from '../lib/gemini.js';
-import { cacheKey, getCached } from '../lib/aiCache.js';
+import { CATEGORY_ES, LEVEL_ES, equipmentEs, exName, exSteps, muscleEs } from '../lib/exercises.js';
 import { ensureGif, getGifUrl, loadGallery } from '../lib/gallery.js';
 
-export default function ExerciseDetail({ exercise, settings, displayName }) {
-  const [tr, setTr] = useState(() => getCached(cacheKey('tr', exercise.id)));
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+export default function ExerciseDetail({ exercise, displayName }) {
+  const [showOriginal, setShowOriginal] = useState(false);
   const [gifStatus, setGifStatus] = useState(() => (getGifUrl(exercise.id) ? 'saved' : 'saving'));
-  const spanishName = displayName || tr?.nombre;
+  const spanishName = displayName || exercise.nombre;
 
   // Primera vez que se abre: armar el GIF y guardarlo en la galeria.
   useEffect(() => {
@@ -28,24 +24,12 @@ export default function ExerciseDetail({ exercise, settings, displayName }) {
     };
   }, [exercise, spanishName]);
 
-  const translate = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      setTr(await translateInstructions(settings, exercise));
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const openVideo = () =>
     Browser.open({
       url: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${exercise.name} exercise technique`)}`,
     });
 
-  const steps = tr?.pasos ?? exercise.instructions;
+  const steps = showOriginal ? exercise.instructions : exSteps(exercise);
 
   return (
     <div className="detail">
@@ -56,8 +40,8 @@ export default function ExerciseDetail({ exercise, settings, displayName }) {
         {gifStatus === 'saved' && '✓ En tu galería (disponible sin internet)'}
         {gifStatus === 'error' && 'No se pudo guardar el GIF (¿sin conexión?)'}
       </p>
-      <h3>{displayName || tr?.nombre || exercise.name}</h3>
-      {(displayName || tr?.nombre) && <p className="muted small">{exercise.name}</p>}
+      <h3>{displayName || exName(exercise)}</h3>
+      {exName(exercise) !== exercise.name && <p className="muted small">{exercise.name}</p>}
       <div className="chips">
         {exercise.primaryMuscles.map((m) => (
           <span key={m} className="chip chip-primary">{muscleEs(m)}</span>
@@ -78,14 +62,13 @@ export default function ExerciseDetail({ exercise, settings, displayName }) {
       </ol>
 
       <div className="row gap">
-        {!tr && settings.apiKey && (
-          <button className="btn btn-secondary" onClick={translate} disabled={loading}>
-            {loading ? 'Traduciendo…' : 'Traducir al español'}
+        <button className="btn btn-secondary" onClick={openVideo}>Ver videos en YouTube</button>
+        {exercise.pasos?.length > 0 && (
+          <button className="btn btn-secondary btn-small" onClick={() => setShowOriginal((v) => !v)}>
+            {showOriginal ? 'Ver en español' : 'Ver original (inglés)'}
           </button>
         )}
-        <button className="btn btn-secondary" onClick={openVideo}>Ver videos en YouTube</button>
       </div>
-      {error && <p className="error">{error}</p>}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { imageUrls } from '../lib/exercises.js';
+import { exName, imageUrls } from '../lib/exercises.js';
 import { getGifUrl, useGallery } from '../lib/gallery.js';
 
 // Muestra el GIF guardado en la galeria; si todavia no existe, alterna las
@@ -22,7 +22,7 @@ export default function ExerciseAnimation({ exercise, size = 'large', interval =
   if (gif) {
     return (
       <div className={`anim anim-${size}`}>
-        <img src={gif} alt={exercise.name} className="visible" />
+        <img src={gif} alt={exName(exercise)} className="visible" />
       </div>
     );
   }
@@ -37,7 +37,7 @@ export default function ExerciseAnimation({ exercise, size = 'large', interval =
         <img
           key={u}
           src={u}
-          alt={`${exercise.name} – posición ${i + 1}`}
+          alt={`${exName(exercise)} – posición ${i + 1}`}
           loading="lazy"
           className={i === frame ? 'visible' : ''}
           onError={() => setFailed(true)}

@@ -153,7 +153,7 @@ export default function App() {
             <SearchPanel exercises={exercises} settings={settings} />
           </>
         )}
-        {tab === 'gallery' && <GalleryScreen settings={settings} />}
+        {tab === 'gallery' && <GalleryScreen />}
         {tab === 'profile' && (
           <>
             <h2>Mi perfil</h2>

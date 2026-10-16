@@ -7,6 +7,11 @@ export const IMAGE_BASE =
 
 export const imageUrls = (ex) => (ex?.images ?? []).map((p) => IMAGE_BASE + p);
 
+// Nombre y pasos en español (vienen incluidos en exercises.json; si faltara
+// alguno se usa el original en ingles).
+export const exName = (ex) => ex?.nombre || ex?.name || '';
+export const exSteps = (ex) => (ex?.pasos?.length ? ex.pasos : ex?.instructions ?? []);
+
 export const MUSCLES_ES = {
   abdominals: 'Abdominales',
   abductors: 'Abductores',
@@ -226,41 +231,58 @@ export function translateQuery(query) {
   return q.trim();
 }
 
-function haystack(ex) {
+function haystacks(ex) {
   return {
-    name: normalize(ex.name),
-    extra: normalize(
-      [...ex.primaryMuscles, ...ex.secondaryMuscles, ex.equipment, ex.category].join(' '),
-    ),
+    en: {
+      name: normalize(ex.name),
+      extra: normalize([...ex.primaryMuscles, ...ex.secondaryMuscles, ex.equipment, ex.category].join(' ')),
+    },
+    es: {
+      name: normalize(ex.nombre ?? ''),
+      extra: normalize(
+        [...ex.primaryMuscles.map(muscleEs), ...ex.secondaryMuscles.map(muscleEs), equipmentEs(ex.equipment)].join(' '),
+      ),
+    },
   };
 }
 
+function scoreTokens(tokens, h, preferStart = false) {
+  let score = 0;
+  let matched = 0;
+  for (const t of tokens) {
+    const stem = t.length > 4 ? t.replace(/s$/, '') : t;
+    if (h.name.includes(stem)) {
+      score += 3;
+      if (new RegExp(`(^|[\\s-])${stem}`).test(h.name)) score += 1;
+      matched++;
+    } else if (h.extra.includes(stem)) {
+      score += 1;
+      matched++;
+    }
+  }
+  if (!matched) return null;
+  // Priorizar los que cumplen todos los terminos y los que empiezan con el primero.
+  if (matched === tokens.length) score += 5;
+  if (preferStart && h.name.startsWith(tokens[0])) score += 1;
+  return score - h.name.length / 200; // a igualdad, nombres mas cortos (mas genericos)
+}
+
+// Busca a la vez por el nombre en español (tal cual se escribio) y por el
+// nombre original en ingles (traduciendo la consulta con el diccionario).
 export function searchExercises(all, query, { limit = 40 } = {}) {
-  const translated = translateQuery(query);
-  const tokens = translated.split(' ').filter((t) => t && !STOPWORDS.has(t));
-  if (!tokens.length) return [];
+  const clean = (q) => q.split(' ').filter((t) => t && !STOPWORDS.has(t));
+  const enTokens = clean(translateQuery(query));
+  const esTokens = clean(normalize(query));
+  if (!enTokens.length && !esTokens.length) return [];
 
   const scored = [];
   for (const ex of all) {
-    const h = haystack(ex);
-    let score = 0;
-    let matched = 0;
-    for (const t of tokens) {
-      const stem = t.length > 4 ? t.replace(/s$/, '') : t;
-      if (h.name.includes(stem)) {
-        score += 3;
-        if (new RegExp(`(^|[\\s-])${stem}`).test(h.name)) score += 1;
-        matched++;
-      } else if (h.extra.includes(stem)) {
-        score += 1;
-        matched++;
-      }
-    }
-    if (!matched) continue;
-    // Priorizar los que cumplen todos los terminos.
-    if (matched === tokens.length) score += 5;
+    const h = haystacks(ex);
+    const en = enTokens.length ? scoreTokens(enTokens, h.en) : null;
+    const es = esTokens.length && h.es.name ? scoreTokens(esTokens, h.es, true) : null;
+    if (en === null && es === null) continue;
+    let score = Math.max(en ?? -Infinity, es ?? -Infinity);
     if (ex.category === 'strength') score += 0.5;
-    score -= h.name.length / 200; // a igualdad, nombres mas cortos (mas genericos)
     scored.push({ ex, score });
   }
   scored.sort((a, b) => b.score - a.score);
@@ -299,7 +321,9 @@ export function resolveExercise(all, id, name) {
     const exact = getExercise(id);
     if (exact) return exact;
     const n = normalize(id.replace(/_/g, ' '));
-    const byName = all.find((e) => normalize(e.name) === n || normalize(e.id.replace(/_/g, ' ')) === n);
+    const byName = all.find(
+      (e) => normalize(e.name) === n || normalize(e.nombre ?? '') === n || normalize(e.id.replace(/_/g, ' ')) === n,
+    );
     if (byName) return byName;
   }
   if (name) return searchExercises(all, name, { limit: 1 })[0] ?? null;

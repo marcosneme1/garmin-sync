@@ -122,7 +122,7 @@ export default function SwapModal({ item, exercise, exercises, profile, settings
 
       {preview && (
         <Modal title="Vista previa" onClose={() => setPreview(null)}>
-          <ExerciseDetail exercise={preview} settings={settings} displayName={ai?.labels[preview.id]} />
+          <ExerciseDetail exercise={preview} displayName={ai?.labels[preview.id]} />
           <button className="btn btn-block" onClick={() => pick(preview, ai?.labels[preview.id])}>
             Usar este ejercicio
           </button>

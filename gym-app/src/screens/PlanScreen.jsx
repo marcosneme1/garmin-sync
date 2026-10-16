@@ -4,7 +4,7 @@ import ExerciseDetail from '../components/ExerciseDetail.jsx';
 import Modal from '../components/Modal.jsx';
 import SearchPanel from '../components/SearchPanel.jsx';
 import SwapModal from '../components/SwapModal.jsx';
-import { getExercise, resolveExercise } from '../lib/exercises.js';
+import { exName, getExercise, resolveExercise } from '../lib/exercises.js';
 import { generatePlan } from '../lib/gemini.js';
 import { DAYS_OPTIONS, GOALS, MINUTES_OPTIONS } from './ProfileForm.jsx';
 import { lastPerformance } from '../lib/workouts.js';
@@ -34,7 +34,7 @@ function normalizePlan(raw, request, exercises) {
         return {
           id: uid(),
           exerciseId: ex?.id ?? null,
-          nombre: e.nombre || ex?.name || e.exerciseId,
+          nombre: e.nombre || exName(ex) || e.exerciseId,
           series: Number(e.series) || 3,
           repeticiones: String(e.repeticiones ?? '10'),
           descansoSeg: Number(e.descansoSeg) || 90,
@@ -209,7 +209,7 @@ export default function PlanScreen({
   const doSwap = (newEx, label) => {
     updateDay((list) =>
       list.map((it) =>
-        it.id === swapping.item.id ? { ...it, exerciseId: newEx.id, nombre: label || newEx.name, notas: '' } : it,
+        it.id === swapping.item.id ? { ...it, exerciseId: newEx.id, nombre: label || exName(newEx), notas: '' } : it,
       ),
     );
     setSwapping(null);
@@ -293,7 +293,7 @@ export default function PlanScreen({
           <p className="sets">
             {viewing.item.series} × {viewing.item.repeticiones} · descanso {viewing.item.descansoSeg}s
           </p>
-          <ExerciseDetail exercise={viewing.ex} settings={settings} displayName={viewing.item.nombre} />
+          <ExerciseDetail exercise={viewing.ex} displayName={viewing.item.nombre} />
         </Modal>
       )}
 
@@ -319,7 +319,7 @@ export default function PlanScreen({
             onPick={(ex) => {
               updateDay((list) => [
                 ...list,
-                { id: uid(), exerciseId: ex.id, nombre: ex.name, series: 3, repeticiones: '10-12', descansoSeg: 90, notas: '' },
+                { id: uid(), exerciseId: ex.id, nombre: exName(ex), series: 3, repeticiones: '10-12', descansoSeg: 90, notas: '' },
               ]);
               setAdding(false);
             }}

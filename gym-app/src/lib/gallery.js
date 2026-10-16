@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { GIFEncoder, applyPalette, quantize } from 'gifenc';
-import { imageUrls } from './exercises.js';
+import { exName, imageUrls } from './exercises.js';
 
 const DB_NAME = 'gymplan';
 const STORE = 'gifs';
@@ -131,7 +131,7 @@ export async function ensureGif(exercise, name) {
       .then(async (blob) => {
         const rec = {
           id: exercise.id,
-          name: name || exercise.name,
+          name: name || exName(exercise),
           originalName: exercise.name,
           muscles: exercise.primaryMuscles,
           equipment: exercise.equipment,

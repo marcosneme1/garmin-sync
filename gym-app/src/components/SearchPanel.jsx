@@ -103,7 +103,6 @@ export default function SearchPanel({ exercises, settings, onPick, pickLabel = '
         <Modal title="Ejercicio" onClose={() => setSelected(null)}>
           <ExerciseDetail
             exercise={selected}
-            settings={settings}
             displayName={showAi ? ai.labels[selected.id] : undefined}
           />
           {onPick && (
