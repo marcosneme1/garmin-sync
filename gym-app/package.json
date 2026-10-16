@@ -15,7 +15,8 @@
     "@capacitor/core": "^8.5.3",
     "gifenc": "^1.0.3",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "react-muscle-highlighter": "1.2.0"
   },
   "devDependencies": {
     "@capacitor/android": "^8.5.3",

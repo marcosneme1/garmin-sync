@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Browser } from '@capacitor/browser';
 import ExerciseAnimation from './ExerciseAnimation.jsx';
+import MuscleMap from './MuscleMap.jsx';
 import { CATEGORY_ES, LEVEL_ES, equipmentEs, exSteps, muscleEs } from '../lib/exercises.js';
 import { ensureGif, getGifUrl, loadGallery } from '../lib/gallery.js';
 import { translateInstructions } from '../lib/gemini.js';
@@ -61,6 +62,7 @@ export default function ExerciseDetail({ exercise, settings, displayName }) {
         {gifStatus === 'saved' && '✓ En tu galería (disponible sin internet)'}
         {gifStatus === 'error' && 'No se pudo guardar el GIF (¿sin conexión?)'}
       </p>
+      <MuscleMap exercise={exercise} />
       <h3>{displayName || exercise.nombre || tr?.nombre || exercise.name}</h3>
       {(displayName || exercise.nombre || tr?.nombre) && <p className="muted small">{exercise.name}</p>}
       <div className="chips">

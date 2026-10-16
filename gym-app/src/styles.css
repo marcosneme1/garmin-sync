@@ -262,3 +262,12 @@ textarea.input { resize: vertical; }
 .install-hint p { margin: 0; flex: 1; }
 .install-hint-body { flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .install-hint-body a.btn { text-decoration: none; }
+
+.muscle-map { margin: 12px 0 4px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.muscle-map-bodies { display: flex; justify-content: center; gap: 20px; }
+.muscle-map-bodies > div { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.muscle-map svg { width: 112px; height: auto; }
+.muscle-map path { cursor: default !important; }
+.muscle-map figcaption { display: flex; align-items: center; gap: 6px; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-left: 8px; }
+.swatch:first-child { margin-left: 0; }
