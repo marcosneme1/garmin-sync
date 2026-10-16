@@ -8,18 +8,36 @@ import { doneSets, lastPerformance, targetReps } from '../lib/workouts.js';
 
 const fmtClock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
-function beep() {
+// En iPhone, Safari solo permite sonido si el contexto de audio se habilito
+// durante un toque del usuario: se hace al marcar la serie (unlockAudio) y
+// despues el pitido del fin del descanso reutiliza ese contexto.
+let audioCtx = null;
+
+function unlockAudio() {
   try {
-    navigator.vibrate?.([300, 150, 300]);
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.25, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.6);
+    audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch {
+    // sin audio
+  }
+}
+
+function beep() {
+  navigator.vibrate?.([300, 150, 300]); // no existe en iPhone
+  try {
+    unlockAudio();
+    const ctx = audioCtx;
+    for (const start of [0, 0.35]) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const t = ctx.currentTime + start;
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.3, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.3);
+    }
   } catch {
     // sin audio
   }
@@ -92,6 +110,7 @@ export default function WorkoutScreen({
       updateSet(ex, i, { done: false });
       return;
     }
+    unlockAudio();
     // Si no cargo repeticiones, se toma el objetivo del plan.
     updateSet(ex, i, { done: true, reps: s.reps || targetReps(ex.target.repeticiones) });
     const secs = ex.target.descansoSeg || 90;

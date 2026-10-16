@@ -5,6 +5,7 @@ import ProfileForm from './screens/ProfileForm.jsx';
 import PlanScreen from './screens/PlanScreen.jsx';
 import SettingsScreen, { ApiKeyFields } from './screens/SettingsScreen.jsx';
 import SearchPanel from './components/SearchPanel.jsx';
+import InstallHint from './components/InstallHint.jsx';
 import GalleryScreen from './screens/GalleryScreen.jsx';
 import { clearGallery, loadGallery } from './lib/gallery.js';
 import { clearAiCache } from './lib/aiCache.js';
@@ -76,6 +77,7 @@ export default function App() {
   if (!profile) {
     return (
       <main className="app onboarding">
+        <InstallHint />
         <h1>Bienvenido a GymPlan 💪</h1>
         <p className="muted">Contame un poco de vos para armarte un plan a medida.</p>
         <ProfileForm
@@ -102,6 +104,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <main className="app">
+        <InstallHint />
         {workout && tab !== 'workout' && (
           <button className="workout-banner" onClick={() => setTab('workout')}>
             ▶ Entrenamiento en curso: <strong>{workout.dayName}</strong> — continuar

@@ -34,7 +34,7 @@ p { margin: 0.5em 0; }
   padding: calc(16px + env(safe-area-inset-top)) 16px 96px;
 }
 .onboarding { padding-bottom: 32px; }
-.center { display: grid; place-items: center; min-height: 100vh; padding: 16px; text-align: center; }
+.center { display: grid; place-items: center; min-height: 100vh; min-height: 100dvh; padding: 16px; text-align: center; }
 
 .muted { color: var(--muted); }
 .small { font-size: 0.875rem; }
@@ -174,7 +174,7 @@ textarea.input { resize: vertical; }
   display: flex; align-items: flex-end; justify-content: center;
 }
 .modal {
-  background: var(--bg); width: 100%; max-width: 640px; max-height: 92vh;
+  background: var(--bg); width: 100%; max-width: 640px; max-height: 92vh; max-height: 92dvh;
   border-radius: 16px 16px 0 0; display: flex; flex-direction: column;
 }
 .modal-header {
@@ -253,3 +253,10 @@ textarea.input { resize: vertical; }
   background: none; border: 0; border-bottom: 1px solid var(--border); color: var(--text); font: inherit;
 }
 .hist-ex { display: flex; flex-direction: column; padding: 8px 0; border-bottom: 1px solid var(--border); }
+
+/* ---- Aviso de instalacion (iPhone) ---- */
+.install-hint {
+  display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px; padding: 12px;
+  background: var(--surface-2); border: 1px solid var(--accent); border-radius: var(--radius); font-size: 0.9rem;
+}
+.install-hint p { margin: 0; flex: 1; }
