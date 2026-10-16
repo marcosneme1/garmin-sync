@@ -112,7 +112,7 @@ function GenerateForm({ profile, settings, exercises, onCreated, onCancel }) {
       <div className="row gap end">
         {onCancel && <button className="btn btn-secondary" onClick={onCancel} disabled={loading}>Cancelar</button>}
         <button className="btn" onClick={submit} disabled={loading || !settings.apiKey}>
-          {loading ? 'Generando (puede tardar ~30 s)…' : '✨ Generar plan'}
+          {loading ? 'Generando… (hasta 1 min, no salgas de la app)' : '✨ Generar plan'}
         </button>
       </div>
     </section>

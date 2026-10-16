@@ -13,12 +13,29 @@ class GeminiError extends Error {
   }
 }
 
+// La conexion se corto antes de recibir respuesta (sin internet, cambio de
+// WiFi a datos, o Android corto la red porque la app quedo en segundo plano).
+// En Android aparece como "Software caused connection abort".
+class NetworkError extends Error {
+  constructor() {
+    super(
+      'Se cortó la conexión con Gemini antes de recibir la respuesta. Suele pasar si se va internet, si el celular cambia entre WiFi y datos, o si salís de la app (o se apaga la pantalla) mientras espera. Probá de nuevo y dejá la app abierta hasta que termine.',
+    );
+    this.network = true;
+  }
+}
+
 async function call(path, apiKey, init = {}) {
   if (!apiKey) throw new Error('Falta la API key de Gemini. Cargala en Ajustes.');
-  const res = await fetch(`${BASE}/${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey, ...init.headers },
-  });
+  let res;
+  try {
+    res = await fetch(`${BASE}/${path}`, {
+      ...init,
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey, ...init.headers },
+    });
+  } catch {
+    throw new NetworkError();
+  }
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = body?.error?.message ?? `HTTP ${res.status}`;
@@ -118,6 +135,7 @@ async function generateJson(settings, prompt, temperature = 0.6) {
   let model = await resolveModel(settings);
   let goneRetries = 0;
   let retriedSame = false;
+  let netRetries = 0;
   const busy = new Set();
   let models = null;
   for (;;) {
@@ -138,6 +156,14 @@ async function generateJson(settings, prompt, temperature = 0.6) {
         }
         model = await resolveModel({ ...settings, model: AUTO_MODEL }, { refresh: true });
         continue;
+      }
+      if (e.network) {
+        // Un corte de conexion suele ser momentaneo: reintentar una vez.
+        if (netRetries++ < 1) {
+          await sleep(2000);
+          continue;
+        }
+        throw e;
       }
       if (!isBusy(e)) throw e;
       if (!retriedSame) {
