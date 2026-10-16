@@ -62,27 +62,12 @@ instalalo habilitando "Instalar apps de origen desconocido".
 Es un APK *debug* (firmado con la clave de depuración): sirve para uso
 personal, no para publicar en Play Store.
 
-## Versión web (iPhone, gratis)
+## Versión web (iPhone)
 
-Apple no permite instalar apps fuera del App Store sin pagar la cuenta de
-desarrollador, así que en iPhone se usa la versión web instalable:
-
-1. El workflow `.github/workflows/gym-app-web.yml` compila la app y la publica
-   en la rama `gh-pages` en cada cambio.
-2. Para servirla: Settings → Pages → *Deploy from a branch* → `gh-pages` /
-   `(root)`. En cuentas gratuitas GitHub Pages solo funciona con el
-   repositorio público. Queda en `https://<usuario>.github.io/<repo>/`.
-   Alternativa sin hacerlo público: Netlify o Cloudflare Pages (gratis)
-   conectados al repo, carpeta base `gym-app`, build `npm run build`,
-   publicar `dist`.
-3. En el iPhone: abrir el link en **Safari** → Compartir → **Agregar a
-   pantalla de inicio**. La app avisa esto sola la primera vez.
-
-La versión web funciona sin conexión una vez abierta (service worker) y
-guarda los datos en el teléfono igual que la app Android. Diferencias en
-iPhone: no vibra al terminar el descanso (Safari no lo permite) y, si se usa
-desde Safari sin instalarla, iOS puede borrar los datos tras varios días sin
-uso.
+La versión web para compartir (instalable en iPhone desde Safari) se publica
+desde un repositorio aparte, `Turuleca82/turuleca82.github.io`, en
+<https://turuleca82.github.io/>. Los cambios en la app hay que llevarlos
+también a ese repositorio.
 
 ## Desarrollo
 
