@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 
 const KEY = 'gym.installHintClosed';
-const APK_URL = 'https://github.com/Turuleca82/turuleca82.github.io/releases/download/apk/GymPlan.apk';
+export const APK_URL = 'https://github.com/Turuleca82/turuleca82.github.io/releases/download/apk/GymPlan.apk';
 
 // Desde el navegador: en iPhone/iPad explica como instalar la app en la
 // pantalla de inicio (iOS no muestra un boton de instalar por su cuenta) y en

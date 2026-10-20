@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
+import { APK_URL } from '../components/InstallHint.jsx';
 import { AUTO_MODEL, listModels, pickBestModel } from '../lib/gemini.js';
 
 export function ApiKeyFields({ value, onChange }) {
@@ -79,6 +81,17 @@ export default function SettingsScreen({ settings, onSave, onResetAll, onEditPro
           <button className="btn" onClick={() => { onSave(draft); setSaved(true); }}>{saved ? 'Guardado ✓' : 'Guardar'}</button>
         </div>
       </section>
+      {/android/i.test(navigator.userAgent) && !Capacitor.isNativePlatform() && (
+        <section className="card">
+          <h2>App para Android</h2>
+          <p className="small muted">
+            Podés instalar GymPlan como app. Abrí el archivo descargado y, si Android lo pide, permití instalar desde el
+            navegador. Lo que cargues acá en la web no pasa a la app.
+          </p>
+          <a className="btn btn-block" href={APK_URL}>Descargar app (APK)</a>
+        </section>
+      )}
+
       <section className="card">
         <h2>Datos</h2>
         <p className="small muted">
