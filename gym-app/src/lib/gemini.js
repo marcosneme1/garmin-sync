@@ -267,8 +267,7 @@ PEDIDO
 - Objetivo principal: ${request.goal}
 - Días por semana que va a entrenar: ${request.daysPerWeek}
 - Tiempo disponible por sesión: ${request.minutesPerSession} minutos (incluyendo calentamiento)
-${request.focus ? `- Prioridades / zonas a enfatizar: ${request.focus}` : ''}
-${request.notes ? `- Comentarios adicionales: ${request.notes}` : ''}
+${request.focus ? `- Prioridades y comentarios de la persona (MUY IMPORTANTE, el plan tiene que reflejarlos): ${request.focus}` : ''}
 
 REGLAS
 - Exactamente ${request.daysPerWeek} días de entrenamiento.
@@ -276,6 +275,7 @@ REGLAS
 - La sesión tiene que ocupar los ${request.minutesPerSession} minutos: usá 3 series por ejercicio (4 en los multiarticulares principales) y descansos acordes al objetivo. No armes sesiones más cortas que el tiempo disponible.
 - Elegí la división (full body, torso/pierna, empuje/tirón/pierna, etc.) según días, tiempo, experiencia y objetivo.
 - Respetá las lesiones/limitaciones: evitá ejercicios que las comprometan.
+- Si la persona dejó prioridades o comentarios, adaptá el plan a cada uno (zonas a priorizar, tiempos por día, equipamiento, molestias, otros deportes) y mencioná en el resumen cómo los tuviste en cuenta.
 - Usá SOLO ejercicios del CATÁLOGO, copiando el "exerciseId" exactamente como aparece (primera columna).
 - "nombre" es el nombre del ejercicio en español, como se lo conoce en un gimnasio de Argentina.
 - "repeticiones" es texto (ej. "8-10", "12 por lado", "30 s").

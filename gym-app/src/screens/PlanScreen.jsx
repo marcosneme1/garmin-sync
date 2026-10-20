@@ -53,7 +53,6 @@ function GenerateForm({ profile, settings, exercises, onCreated, onCancel }) {
     goal: profile.goal,
     exercisesPerDay: 'auto',
     focus: '',
-    notes: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -116,12 +115,18 @@ function GenerateForm({ profile, settings, exercises, onCreated, onCancel }) {
         </select>
       </div>
       <div className="field">
-        <span>Zonas a priorizar (opcional)</span>
-        <input className="input" placeholder="Ej: glúteos y espalda" value={req.focus} onChange={(e) => set('focus', e.target.value)} />
-      </div>
-      <div className="field">
-        <span>Algo más que deba saber (opcional)</span>
-        <textarea className="input" rows={2} placeholder="Ej: los martes tengo solo 40 minutos, prefiero máquinas…" value={req.notes} onChange={(e) => set('notes', e.target.value)} />
+        <span>Zonas a priorizar y comentarios para el plan{"\u00a0"}*</span>
+        <textarea
+          className="input"
+          rows={4}
+          placeholder="Ej: quiero priorizar glúteos y espalda. Los martes tengo solo 40 minutos. Prefiero máquinas a peso libre. Me molesta el hombro derecho. Juego al fútbol los sábados."
+          value={req.focus}
+          onChange={(e) => set('focus', e.target.value)}
+        />
+        <span className="small muted">
+          * Opcional, pero es lo que más personaliza el plan: todo lo que escribas acá se tiene en cuenta (zonas a
+          priorizar, días con menos tiempo, máquinas que preferís o no tenés, molestias, otros deportes, etc.).
+        </span>
       </div>
       {error && <p className="error">{error}</p>}
       <div className="row gap end">
