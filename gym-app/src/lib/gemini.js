@@ -17,9 +17,15 @@ class GeminiError extends Error {
 // WiFi a datos, o Android corto la red porque la app quedo en segundo plano).
 // En Android aparece como "Software caused connection abort".
 class NetworkError extends Error {
-  constructor() {
+  // cause: el error original; startedAt: cuando arranco el pedido. Se muestran
+  // en el mensaje para poder distinguir un bloqueo (corta enseguida) de una
+  // conexion que se corta por esperar demasiado (corta siempre al mismo tiempo).
+  constructor(cause, startedAt) {
+    const secs = startedAt ? Math.round((Date.now() - startedAt) / 1000) : null;
+    const detail = [cause?.message, secs !== null ? `se cortó a los ${secs} s` : null].filter(Boolean).join(', ');
     super(
-      'Se cortó la conexión con Gemini antes de recibir la respuesta. Suele pasar si se va internet, si el celular cambia entre WiFi y datos, o si salís de la app (o se apaga la pantalla) mientras espera. Probá de nuevo y dejá la app abierta hasta que termine.',
+      'Se cortó la conexión con Gemini antes de recibir la respuesta. Suele pasar si se va internet, si el celular cambia entre WiFi y datos, o si salís de la app (o se apaga la pantalla) mientras espera. Probá de nuevo y dejá la app abierta hasta que termine.' +
+        (detail ? ` (Detalle: ${detail}.)` : ''),
     );
     this.network = true;
   }
@@ -27,13 +33,14 @@ class NetworkError extends Error {
 
 async function send(path, apiKey, init = {}) {
   if (!apiKey) throw new Error('Falta la API key de Gemini. Cargala en Ajustes.');
+  const startedAt = Date.now();
   try {
     return await fetch(`${BASE}/${path}`, {
       ...init,
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey, ...init.headers },
     });
-  } catch {
-    throw new NetworkError();
+  } catch (e) {
+    throw new NetworkError(e, startedAt);
   }
 }
 
@@ -199,6 +206,7 @@ async function generateJson(settings, prompt, temperature = 0.6) {
 // un plan largo; en datos moviles una conexion sin trafico por mas de ~1 min
 // suele cortarse ("Software caused connection abort").
 async function generateWith(apiKey, model, prompt, temperature) {
+  const startedAt = Date.now();
   const res = await send(`models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`, apiKey, {
     method: 'POST',
     body: JSON.stringify({
@@ -209,8 +217,8 @@ async function generateWith(apiKey, model, prompt, temperature) {
   let raw;
   try {
     raw = await res.text();
-  } catch {
-    throw new NetworkError();
+  } catch (e) {
+    throw new NetworkError(e, startedAt);
   }
   if (!res.ok) {
     let body = {};
