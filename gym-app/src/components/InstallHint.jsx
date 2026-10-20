@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 
 const KEY = 'gym.installHintClosed';
-export const APK_URL = 'https://github.com/Turuleca82/turuleca82.github.io/releases/download/apk/GymPlan.apk';
+// El APK se publica junto con la pagina (misma direccion): asi el atributo
+// "download" fuerza la descarga, tambien desde la web instalada en el inicio.
+export const APK_URL = './GymPlan.apk';
 
 // Desde el navegador: en iPhone/iPad explica como instalar la app en la
 // pantalla de inicio (iOS no muestra un boton de instalar por su cuenta) y en
@@ -36,7 +38,7 @@ export default function InstallHint() {
           <p>
             <strong>¿Tenés Android?</strong> Podés instalar GymPlan como app.
           </p>
-          <a className="btn btn-small" href={APK_URL} target="_blank" rel="noopener noreferrer">Descargar app (APK)</a>
+          <a className="btn btn-small" href={APK_URL} download="GymPlan.apk">Descargar app (APK)</a>
           <p className="small">
             Abrí el archivo descargado y, si Android lo pide, permití instalar desde Chrome. Lo que cargues acá en la
             web no pasa a la app.

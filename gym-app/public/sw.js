@@ -1,8 +1,8 @@
 // Service worker: permite abrir la app sin conexion (version web / iPhone).
 // - Pagina: primero red, si no hay conexion la copia guardada.
 // - Archivos de la app y base de ejercicios: copia guardada, actualizada en segundo plano.
-// - Gemini e imagenes externas: siempre por red (la galeria guarda sus GIFs aparte).
-const CACHE = 'gymplan-v2';
+// - Gemini, imagenes externas y el APK: siempre por red (la galeria guarda sus GIFs aparte).
+const CACHE = 'gymplan-v3';
 const CORE = ['./', './index.html', './exercises.json', './manifest.webmanifest', './icons/icon-192.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {
@@ -31,7 +31,10 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  const url = new URL(req.url);
+  if (req.method !== 'GET' || url.origin !== self.location.origin) return;
+  // El APK siempre se baja de la red (no se guarda una version vieja).
+  if (url.pathname.endsWith('.apk')) return;
 
   if (req.mode === 'navigate') {
     event.respondWith(
