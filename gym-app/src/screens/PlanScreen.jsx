@@ -189,6 +189,7 @@ export default function PlanScreen({
 }) {
   const plan = plans.find((p) => p.id === activePlanId) ?? plans[0] ?? null;
   const [creating, setCreating] = useState(!plan);
+  const [showTips, setShowTips] = useState(false);
   const [dayIdx, setDayIdx] = useState(0);
   const [viewing, setViewing] = useState(null);
   const [swapping, setSwapping] = useState(null);
@@ -254,8 +255,10 @@ export default function PlanScreen({
         <p className="muted small">
           {plan.request.daysPerWeek} días/semana · {plan.request.minutesPerSession} min · {plan.request.goal}
         </p>
-        {plan.resumen && <p>{plan.resumen}</p>}
         <div className="row gap">
+          {(plan.resumen || plan.progresion || plan.advertencias) && (
+            <button className="btn btn-secondary btn-small" onClick={() => setShowTips(true)}>💡 Recomendaciones</button>
+          )}
           <button className="btn btn-secondary btn-small" onClick={() => setCreating(true)}>+ Nuevo plan</button>
           <button className="btn btn-danger btn-small" onClick={deletePlan}>Borrar</button>
         </div>
@@ -296,11 +299,12 @@ export default function PlanScreen({
         {day.vueltaCalma && <p className="small"><strong>Vuelta a la calma:</strong> {day.vueltaCalma}</p>}
       </section>
 
-      {(plan.progresion || plan.advertencias) && (
-        <section className="card">
+      {showTips && (
+        <Modal title="Recomendaciones" onClose={() => setShowTips(false)}>
+          {plan.resumen && (<><h3>Sobre el plan</h3><p>{plan.resumen}</p></>)}
           {plan.progresion && (<><h3>Progresión</h3><p>{plan.progresion}</p></>)}
           {plan.advertencias && (<><h3>Precauciones</h3><p>{plan.advertencias}</p></>)}
-        </section>
+        </Modal>
       )}
 
       {viewing && (
