@@ -5,11 +5,12 @@ import Modal from '../components/Modal.jsx';
 import SearchPanel from '../components/SearchPanel.jsx';
 import SwapModal from '../components/SwapModal.jsx';
 import { exName, getExercise, resolveExercise } from '../lib/exercises.js';
-import { generatePlan } from '../lib/gemini.js';
+import { exerciseRange, generatePlan } from '../lib/gemini.js';
 import { DAYS_OPTIONS, GOALS, MINUTES_OPTIONS } from './ProfileForm.jsx';
 import { lastPerformance } from '../lib/workouts.js';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
+const EXERCISES_OPTIONS = [4, 5, 6, 7, 8, 9, 10];
 
 // Convierte la respuesta de Gemini en un plan guardable, validando que cada
 // ejercicio exista en la base.
@@ -50,12 +51,15 @@ function GenerateForm({ profile, settings, exercises, onCreated, onCancel }) {
     daysPerWeek: profile.daysPerWeek,
     minutesPerSession: profile.minutesPerSession,
     goal: profile.goal,
+    exercisesPerDay: 'auto',
     focus: '',
     notes: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const set = (k, v) => setReq((r) => ({ ...r, [k]: v }));
+  const range = exerciseRange(req.minutesPerSession, req.goal);
+  const autoLabel = range.min === range.max ? range.min : `${range.min}–${range.max}`;
 
   const submit = async () => {
     setLoading(true);
@@ -93,6 +97,17 @@ function GenerateForm({ profile, settings, exercises, onCreated, onCancel }) {
             <button key={m} className={req.minutesPerSession === m ? 'selected' : ''} onClick={() => set('minutesPerSession', m)}>{m}</button>
           ))}
         </div>
+      </div>
+      <div className="field">
+        <span>Ejercicios por día</span>
+        <div className="choice">
+          {['auto', ...EXERCISES_OPTIONS].map((n) => (
+            <button key={n} className={req.exercisesPerDay === n ? 'selected' : ''} onClick={() => set('exercisesPerDay', n)}>
+              {n === 'auto' ? `Auto (${autoLabel})` : n}
+            </button>
+          ))}
+        </div>
+        <span className="small muted">Automático calcula cuántos entran según los minutos y el objetivo.</span>
       </div>
       <div className="field">
         <span>Objetivo</span>

@@ -239,8 +239,24 @@ function profileText(p) {
     .join('\n');
 }
 
+// Cuantos ejercicios por dia entran en el tiempo disponible. Se calcula con
+// ~8 min por ejercicio de 3 series con descanso (10 min si el objetivo es
+// fuerza, por los descansos largos; 6,5 si es perder grasa o resistencia),
+// descontando el calentamiento.
+export function exerciseRange(minutes, goal = '') {
+  const perExercise = /fuerza/i.test(goal) ? 10 : /grasa|resistencia/i.test(goal) ? 6.5 : 8;
+  const usable = minutes - (minutes >= 60 ? 10 : 7);
+  const n = usable / perExercise;
+  const max = Math.min(10, Math.max(4, Math.ceil(n) === Math.floor(n) ? n + 1 : Math.ceil(n)));
+  const min = Math.min(max, Math.max(3, Math.floor(n)));
+  return { min, max };
+}
+
 export async function generatePlan(settings, profile, request, exercises) {
   const available = exercises.filter((e) => profile.equipment.includes(e.equipment));
+  const fixed = Number(request.exercisesPerDay) || 0;
+  const { min, max } = fixed ? { min: fixed, max: fixed } : exerciseRange(request.minutesPerSession, request.goal);
+  const amount = min === max ? `exactamente ${min}` : `entre ${min} y ${max}`;
   const prompt = `Sos un entrenador personal certificado y con criterio basado en evidencia.
 Armá un plan de entrenamiento de gimnasio en español rioplatense para esta persona.
 
@@ -256,7 +272,8 @@ ${request.notes ? `- Comentarios adicionales: ${request.notes}` : ''}
 
 REGLAS
 - Exactamente ${request.daysPerWeek} días de entrenamiento.
-- Cada sesión tiene que entrar en ${request.minutesPerSession} minutos: estimá ~2-3 min por serie incluyendo descanso, más el calentamiento. No pongas más ejercicios de los que entran.
+- Cada día tiene que tener ${amount} ejercicios (sin contar el calentamiento ni la vuelta a la calma). Es un requisito, no un máximo.
+- La sesión tiene que ocupar los ${request.minutesPerSession} minutos: usá 3 series por ejercicio (4 en los multiarticulares principales) y descansos acordes al objetivo. No armes sesiones más cortas que el tiempo disponible.
 - Elegí la división (full body, torso/pierna, empuje/tirón/pierna, etc.) según días, tiempo, experiencia y objetivo.
 - Respetá las lesiones/limitaciones: evitá ejercicios que las comprometan.
 - Usá SOLO ejercicios del CATÁLOGO, copiando el "exerciseId" exactamente como aparece (primera columna).
@@ -289,7 +306,18 @@ Respondé SOLO con JSON con esta forma:
 CATÁLOGO (exerciseId | músculos principales | equipamiento | categoría)
 ${catalog(available)}`;
 
-  return generateJson(settings, prompt, 0.7);
+  const plan = await generateJson(settings, prompt, 0.7);
+  // Gemini a veces se queda corto: si algun dia tiene menos ejercicios de los
+  // pedidos, se lo vuelve a pedir una vez marcandole el error.
+  const tooFew = (p) => (p.dias ?? []).some((d) => (d.ejercicios ?? []).length < min);
+  if (!tooFew(plan)) return plan;
+  const counts = plan.dias.map((d) => (d.ejercicios ?? []).length).join(', ');
+  const retry = await generateJson(
+    settings,
+    `${prompt}\n\nIMPORTANTE: en un intento anterior armaste días con ${counts} ejercicios. Cada día tiene que tener ${amount} ejercicios.`,
+    0.7,
+  ).catch(() => null);
+  return retry && !tooFew(retry) ? retry : plan;
 }
 
 export async function suggestAlternatives(settings, profile, exercise, reason, exercises) {
