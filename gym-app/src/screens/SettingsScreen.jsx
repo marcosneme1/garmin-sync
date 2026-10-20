@@ -88,7 +88,7 @@ export default function SettingsScreen({ settings, onSave, onResetAll, onEditPro
             Podés instalar GymPlan como app. Abrí el archivo descargado y, si Android lo pide, permití instalar desde el
             navegador. Lo que cargues acá en la web no pasa a la app.
           </p>
-          <a className="btn btn-block" href={APK_URL}>Descargar app (APK)</a>
+          <a className="btn btn-block" href={APK_URL} target="_blank" rel="noopener noreferrer">Descargar app (APK)</a>
         </section>
       )}
 
