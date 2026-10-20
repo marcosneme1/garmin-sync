@@ -134,7 +134,7 @@ export function fallbackOrder(models) {
 async function generateJson(settings, prompt, temperature = 0.6) {
   let model = await resolveModel(settings);
   let goneRetries = 0;
-  let retriedSame = false;
+  let sameRetries = 0;
   let netRetries = 0;
   const busy = new Set();
   let models = null;
@@ -166,15 +166,18 @@ async function generateJson(settings, prompt, temperature = 0.6) {
         throw e;
       }
       if (!isBusy(e)) throw e;
-      if (!retriedSame) {
-        retriedSame = true;
-        await sleep(2500);
+      // Saturacion: esperar y reintentar el mismo modelo (mas paciencia con
+      // el primero), y despues probar con otros modelos disponibles.
+      const waits = busy.size === 0 ? [3000, 8000] : [4000];
+      if (sameRetries < waits.length) {
+        await sleep(waits[sameRetries++]);
         continue;
       }
+      sameRetries = 0;
       busy.add(model);
       models ??= await listModels(settings.apiKey).catch(() => []);
       const next = fallbackOrder(models).find((m) => !busy.has(m) && !unavailable.has(m));
-      if (!next || busy.size >= 3) {
+      if (!next || busy.size >= 5) {
         throw new Error(
           e.status === 429
             ? 'Se alcanzó el límite de uso gratuito de Gemini de tu API key por ahora. Probá de nuevo más tarde.'
