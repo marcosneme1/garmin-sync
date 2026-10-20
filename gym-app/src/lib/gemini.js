@@ -25,22 +25,27 @@ class NetworkError extends Error {
   }
 }
 
-async function call(path, apiKey, init = {}) {
+async function send(path, apiKey, init = {}) {
   if (!apiKey) throw new Error('Falta la API key de Gemini. Cargala en Ajustes.');
-  let res;
   try {
-    res = await fetch(`${BASE}/${path}`, {
+    return await fetch(`${BASE}/${path}`, {
       ...init,
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey, ...init.headers },
     });
   } catch {
     throw new NetworkError();
   }
+}
+
+const errorFrom = (body, status) => {
+  const err = Array.isArray(body) ? body[0]?.error : body?.error;
+  return new GeminiError(`Gemini: ${err?.message ?? `HTTP ${status}`}`, err?.code ?? status);
+};
+
+async function call(path, apiKey, init = {}) {
+  const res = await send(path, apiKey, init);
   const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const msg = body?.error?.message ?? `HTTP ${res.status}`;
-    throw new GeminiError(`Gemini: ${msg}`, res.status);
-  }
+  if (!res.ok) throw errorFrom(body, res.status);
   return body;
 }
 
@@ -189,24 +194,73 @@ async function generateJson(settings, prompt, temperature = 0.6) {
   }
 }
 
+// Se pide la respuesta en modo streaming (SSE): Gemini la va mandando a
+// medida que la escribe. Asi la conexion no queda "callada" mientras se arma
+// un plan largo; en datos moviles una conexion sin trafico por mas de ~1 min
+// suele cortarse ("Software caused connection abort").
 async function generateWith(apiKey, model, prompt, temperature) {
-  const body = await call(`models/${encodeURIComponent(model)}:generateContent`, apiKey, {
+  const res = await send(`models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`, apiKey, {
     method: 'POST',
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: { responseMimeType: 'application/json', temperature },
     }),
   });
-  const cand = body.candidates?.[0];
-  const text = cand?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
-  if (!text) {
-    const reason = cand?.finishReason ?? body.promptFeedback?.blockReason ?? 'respuesta vacía';
-    throw new Error(`Gemini no devolvió contenido (${reason}).`);
+  let raw;
+  try {
+    raw = await res.text();
+  } catch {
+    throw new NetworkError();
   }
+  if (!res.ok) {
+    let body = {};
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      // cuerpo no JSON
+    }
+    throw errorFrom(body, res.status);
+  }
+
+  // Cada evento es una linea "data: {...}" con un pedazo del texto. Si por
+  // algun motivo llega como JSON comun (objeto o lista), tambien se acepta.
+  let chunks = raw
+    .split(/\r?\n/)
+    .filter((l) => l.startsWith('data:'))
+    .map((l) => {
+      try {
+        return JSON.parse(l.slice(5).trim());
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+  if (!chunks.length) {
+    try {
+      const body = JSON.parse(raw);
+      chunks = Array.isArray(body) ? body : [body];
+    } catch {
+      chunks = [];
+    }
+  }
+
+  let text = '';
+  let reason = '';
+  for (const c of chunks) {
+    if (c.error) throw errorFrom(c, c.error.code);
+    const cand = c.candidates?.[0];
+    text += cand?.content?.parts?.map((p) => (p.thought ? '' : p.text ?? '')).join('') ?? '';
+    reason = cand?.finishReason ?? c.promptFeedback?.blockReason ?? reason;
+  }
+  if (!text) throw new Error(`Gemini no devolvió contenido (${reason || 'respuesta vacía'}).`);
   try {
     return JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ''));
   } catch {
-    throw new Error('Gemini devolvió un JSON inválido. Probá de nuevo.');
+    throw new Error(
+      reason === 'MAX_TOKENS'
+        ? 'La respuesta de Gemini quedó cortada por larga. Probá con menos ejercicios por día.'
+        : 'Gemini devolvió un JSON inválido. Probá de nuevo.',
+    );
   }
 }
 
