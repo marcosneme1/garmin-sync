@@ -362,3 +362,103 @@ ${exercise.instructions.map((s, i) => `${i + 1}. ${s}`).join('\n')}
 Respondé SOLO JSON: {"nombre": string, "pasos": [string]}`;
   return cached(cacheKey('tr', exercise.id), () => generateJson(settings, prompt, 0.2));
 }
+
+// Plan del mes siguiente: misma estructura (dias, enfoque, musculos y
+// cantidad de ejercicios) pero con ejercicios nuevos. mode 'basics' mantiene
+// los basicos multiarticulares para seguir progresando en peso; 'all' cambia
+// todos.
+export async function renewPlan(settings, profile, plan, mode, exercises) {
+  const byId = new Map(exercises.map((e) => [e.id, e]));
+  const available = exercises.filter((e) => profile.equipment.includes(e.equipment));
+  const request = plan.request ?? {};
+  const current = plan.dias
+    .map((d, i) => {
+      const lines = d.ejercicios.map((it) => {
+        const ex = byId.get(it.exerciseId);
+        const muscles = ex ? ex.primaryMuscles.map(muscleEs).join(', ') : '?';
+        return `  - ${it.exerciseId ?? '?'} | ${it.nombre} | ${muscles} | ${it.series}x${it.repeticiones}`;
+      });
+      return `Día ${i + 1}: "${d.nombre}" (${d.enfoque || 'sin enfoque'})\n${lines.join('\n')}`;
+    })
+    .join('\n\n');
+  const changeRule =
+    mode === 'all'
+      ? '- Reemplazá TODOS los ejercicios por otros distintos (otro exerciseId) que trabajen el mismo músculo principal.'
+      : '- Mantené los ejercicios básicos multiarticulares (sentadilla, peso muerto, press de banca, press militar, remo, dominadas y similares; como máximo 2 por día) con el mismo exerciseId, para que la persona siga progresando en peso. Reemplazá todos los demás por otros distintos (otro exerciseId) que trabajen el mismo músculo principal.';
+
+  const prompt = `Sos un entrenador personal certificado y con criterio basado en evidencia.
+Esta persona terminó un ciclo con el plan de abajo y quiere el plan del mes siguiente, en español rioplatense: la MISMA estructura con ejercicios nuevos.
+
+PERFIL
+${profileText(profile)}
+
+PEDIDO ORIGINAL
+- Objetivo principal: ${request.goal ?? ''}
+- Días por semana: ${request.daysPerWeek ?? plan.dias.length}
+- Tiempo por sesión: ${request.minutesPerSession ?? ''} minutos
+${request.focus ? `- Prioridades y comentarios de la persona (MUY IMPORTANTE, el plan tiene que reflejarlos): ${request.focus}` : ''}
+
+PLAN ACTUAL (exerciseId | nombre | músculo principal | series x repeticiones)
+${current}
+
+REGLAS
+- Mismos días, en el mismo orden, con el mismo nombre y enfoque.
+- Cada día tiene que tener la misma cantidad de ejercicios que en el plan actual, trabajando los mismos músculos.
+${changeRule}
+- Podés ajustar series, repeticiones y descansos para dar un estímulo nuevo, acorde al objetivo.
+- Respetá las lesiones/limitaciones y los comentarios de la persona.
+- Usá SOLO ejercicios del CATÁLOGO, copiando el "exerciseId" exactamente como aparece (primera columna).
+- "nombre" es el nombre del ejercicio en español, como se lo conoce en un gimnasio de Argentina.
+- "repeticiones" es texto (ej. "8-10", "12 por lado", "30 s").
+- En "resumen" contá en 2-3 oraciones qué cambió y por qué.
+
+Respondé SOLO con JSON con esta forma:
+{
+  "nombre": string,
+  "resumen": string,
+  "dias": [{
+    "nombre": string,
+    "enfoque": string,
+    "duracionMin": number,
+    "calentamiento": string,
+    "ejercicios": [{
+      "exerciseId": string,
+      "nombre": string,
+      "series": number,
+      "repeticiones": string,
+      "descansoSeg": number,
+      "notas": string
+    }],
+    "vueltaCalma": string
+  }],
+  "progresion": string,
+  "advertencias": string
+}
+
+CATÁLOGO (exerciseId | músculos | equipamiento | categoría)
+${catalog(available)}`;
+
+  // Control: misma cantidad de ejercicios por dia y que realmente haya cambios.
+  const oldIds = new Set(plan.dias.flatMap((d) => d.ejercicios.map((it) => it.exerciseId)));
+  const problems = (p) => {
+    const dias = p.dias ?? [];
+    if (dias.length < plan.dias.length) return 'tenía menos días que el plan actual';
+    if (dias.some((d, i) => (d.ejercicios ?? []).length < plan.dias[i].ejercicios.length)) return 'tenía días con menos ejercicios que el plan actual';
+    const all = dias.flatMap((d) => (d.ejercicios ?? []).map((e) => e.exerciseId));
+    const repeated = all.filter((id) => oldIds.has(id)).length;
+    const allowed = mode === 'all' ? 0 : Math.max(2, plan.dias.length * 2);
+    if (repeated > allowed) return `repetía ${repeated} ejercicios del plan actual`;
+    return null;
+  };
+
+  const first = await generateJson(settings, prompt, 0.8);
+  const issue = problems(first);
+  if (!issue) return first;
+  const retry = await generateJson(
+    settings,
+    `${prompt}\n\nIMPORTANTE: en un intento anterior la respuesta ${issue}. Corregilo respetando todas las reglas.`,
+    0.8,
+  ).catch(() => null);
+  return retry && !problems(retry) ? retry : first;
+}
+

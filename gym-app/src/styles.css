@@ -271,3 +271,8 @@ textarea.input { resize: vertical; }
 .muscle-map figcaption { display: flex; align-items: center; gap: 6px; }
 .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-left: 8px; }
 .swatch:first-child { margin-left: 0; }
+
+.renew-hint { border-color: var(--accent); }
+.renew-hint p { margin-top: 0; }
+.renew-modes { flex-direction: column; margin: 12px 0; }
+.renew-modes button { align-items: flex-start; text-align: left; }

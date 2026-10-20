@@ -5,12 +5,17 @@ import Modal from '../components/Modal.jsx';
 import SearchPanel from '../components/SearchPanel.jsx';
 import SwapModal from '../components/SwapModal.jsx';
 import { exName, getExercise, resolveExercise } from '../lib/exercises.js';
-import { exerciseRange, generatePlan } from '../lib/gemini.js';
+import { exerciseRange, generatePlan, renewPlan } from '../lib/gemini.js';
 import { DAYS_OPTIONS, GOALS, MINUTES_OPTIONS } from './ProfileForm.jsx';
 import { lastPerformance } from '../lib/workouts.js';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 const EXERCISES_OPTIONS = [4, 5, 6, 7, 8, 9, 10];
+const RENEW_AFTER_DAYS = 28;
+const RENEW_MODES = [
+  ['basics', 'Mantener los básicos y cambiar el resto', 'Recomendado: seguís progresando en peso en sentadilla, press, remo, etc.'],
+  ['all', 'Cambiar todos los ejercicios', 'Todo nuevo, mismos músculos por día'],
+];
 
 // Convierte la respuesta de Gemini en un plan guardable, validando que cada
 // ejercicio exista en la base.
@@ -195,6 +200,10 @@ export default function PlanScreen({
   const plan = plans.find((p) => p.id === activePlanId) ?? plans[0] ?? null;
   const [creating, setCreating] = useState(!plan);
   const [showTips, setShowTips] = useState(false);
+  const [renewing, setRenewing] = useState(false);
+  const [renewMode, setRenewMode] = useState('basics');
+  const [renewLoading, setRenewLoading] = useState(false);
+  const [renewError, setRenewError] = useState('');
   const [dayIdx, setDayIdx] = useState(0);
   const [viewing, setViewing] = useState(null);
   const [swapping, setSwapping] = useState(null);
@@ -236,6 +245,35 @@ export default function PlanScreen({
     setSwapping(null);
   };
 
+  const daysOld = Math.floor((Date.now() - new Date(plan.createdAt).getTime()) / 86400000);
+  const showRenewHint = daysOld >= RENEW_AFTER_DAYS && !plan.renewHintDismissed;
+  const dismissRenewHint = () =>
+    onSavePlans(plans.map((p) => (p.id === plan.id ? { ...p, renewHintDismissed: true } : p)));
+
+  // Plan del mes siguiente: misma estructura, ejercicios nuevos. El anterior
+  // queda guardado y el historial de pesos se mantiene.
+  const doRenew = async () => {
+    setRenewLoading(true);
+    setRenewError('');
+    try {
+      const raw = await renewPlan(settings, profile, plan, renewMode, exercises);
+      const next = normalizePlan(raw, plan.request, exercises);
+      if (!next.dias.length) throw new Error('Gemini devolvió un plan sin días. Probá de nuevo.');
+      const mes = (plan.mes ?? 1) + 1;
+      next.nombre = `${plan.nombre.replace(/ · mes \d+$/, '')} · mes ${mes}`;
+      next.mes = mes;
+      next.previousPlanId = plan.id;
+      onSavePlans([next, ...plans.map((p) => (p.id === plan.id ? { ...p, renewHintDismissed: true } : p))]);
+      onSetActive(next.id);
+      setDayIdx(0);
+      setRenewing(false);
+    } catch (e) {
+      setRenewError(e.message);
+    } finally {
+      setRenewLoading(false);
+    }
+  };
+
   const deletePlan = () => {
     if (!window.confirm(`¿Borrar el plan "${plan.nombre}"?`)) return;
     const rest = plans.filter((p) => p.id !== plan.id);
@@ -264,10 +302,24 @@ export default function PlanScreen({
           {(plan.resumen || plan.progresion || plan.advertencias) && (
             <button className="btn btn-secondary btn-small" onClick={() => setShowTips(true)}>💡 Recomendaciones</button>
           )}
+          <button className="btn btn-secondary btn-small" onClick={() => setRenewing(true)}>🔄 Actualizar plan</button>
           <button className="btn btn-secondary btn-small" onClick={() => setCreating(true)}>+ Nuevo plan</button>
           <button className="btn btn-danger btn-small" onClick={deletePlan}>Borrar</button>
         </div>
       </section>
+
+      {showRenewHint && (
+        <section className="card renew-hint">
+          <p>
+            Hace {Math.floor(daysOld / 7)} semanas que usás este plan. ¿Lo actualizamos con ejercicios nuevos para los
+            mismos músculos?
+          </p>
+          <div className="row gap">
+            <button className="btn btn-small" onClick={() => setRenewing(true)}>🔄 Actualizar plan</button>
+            <button className="btn btn-secondary btn-small" onClick={dismissRenewHint}>Ahora no</button>
+          </div>
+        </section>
+      )}
 
       <div className="day-tabs">
         {plan.dias.map((d, i) => (
@@ -303,6 +355,28 @@ export default function PlanScreen({
         <button className="btn btn-secondary btn-block" onClick={() => setAdding(true)}>+ Agregar ejercicio</button>
         {day.vueltaCalma && <p className="small"><strong>Vuelta a la calma:</strong> {day.vueltaCalma}</p>}
       </section>
+
+      {renewing && (
+        <Modal title="Actualizar plan" onClose={() => !renewLoading && setRenewing(false)}>
+          <p className="small">
+            Se arma un plan nuevo con los mismos días, músculos, minutos y comentarios, pero con ejercicios distintos.
+            Este plan queda guardado y tu historial de pesos se mantiene.
+          </p>
+          <div className="choice renew-modes">
+            {RENEW_MODES.map(([val, label, hint]) => (
+              <button key={val} type="button" className={renewMode === val ? 'selected' : ''} onClick={() => setRenewMode(val)}>
+                {label}
+                <small>{hint}</small>
+              </button>
+            ))}
+          </div>
+          {!settings.apiKey && <p className="error">Necesitás cargar tu API key de Gemini en Ajustes.</p>}
+          {renewError && <p className="error">{renewError}</p>}
+          <button className="btn btn-block" onClick={doRenew} disabled={renewLoading || !settings.apiKey}>
+            {renewLoading ? 'Armando el plan… (hasta 1 min, no salgas de la app)' : '✨ Generar plan actualizado'}
+          </button>
+        </Modal>
+      )}
 
       {showTips && (
         <Modal title="Recomendaciones" onClose={() => setShowTips(false)}>
